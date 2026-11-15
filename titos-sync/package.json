@@ -1,0 +1,10 @@
+{
+  "name": "titos-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Saves and shares Tito's maths progress between family devices",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "pg": "^8.13.0" }
+}
