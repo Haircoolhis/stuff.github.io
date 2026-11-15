@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tito's Maths Practice</title>
+<title>Tito's 11+ Prep</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -325,7 +325,7 @@ const opSym=o=>o==="-"?"−":"+";
 function sheetById(id){return SHEETS.find(s=>s.id===id)||view.extraSheet}
 
 function header(back){
-  return `<div class="top"><div class="brand"><div class="logo">T</div><div><h1>Tito's Maths</h1><small class="sync">${SYNC_TXT[syncState]}</small></div></div>
+  return `<div class="top"><div class="brand"><div class="logo">T</div><div><h1>Tito's 11+ Prep</h1><small class="sync">${SYNC_TXT[syncState]}</small></div></div>
   ${back?`<button class="btn ghost small" onclick="go('home')">← All sheets</button>`:""}</div>`;
 }
 function progress(s){
@@ -566,7 +566,7 @@ function shortReport(sid){
   const s=sheetById(sid), t=store.tests?.[sid];
   const rows=s.qs.map(q=>({q,r:store[sid]?.[q[0]]}));
   const right=rows.filter(x=>["star","ok"].includes(x.r?.status)).length;
-  let out=`📚 Tito's Maths – ${s.day}\n`;
+  let out=`📚 Tito's 11+ Prep – ${s.day}\n`;
   if(t&&t.submitted) out+=`📝 Test score: ${t.score}/${t.total}\n`;
   out+=`✅ Now correct: ${right}/${rows.length}\n`;
   const toFix=rows.filter(x=>x.r?.status==="wrong"), helped=rows.filter(x=>x.r?.status==="help");
