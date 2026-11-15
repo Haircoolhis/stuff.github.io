@@ -237,22 +237,70 @@ function save(){store._updated=Date.now();try{localStorage.setItem(KEY,JSON.stri
 function logEvent(text){store.log=store.log||[];store.log.unshift({t:Date.now(),text});store.log=store.log.slice(0,60);}
 
 /* ---- shared progress (syncs between devices when available) ---- */
-let docRef=null, syncState="local", writing=false, again=false, readOnly=false, syncT=null, uploadedLocal=false;
-const SYNC_TXT={local:"📱 Saved on this device only",loading:"☁️ Connecting…",synced:"☁️ Progress synced",offline:"⚠️ Not synced yet — saved on this device",readonly:"👀 View only — progress from Tito's device"};
+const SYNC_URL="https://titos-maths-sync.onrender.com";
+let backend=null, docRef=null, syncState="local", writing=false, again=false, readOnly=false, syncT=null, uploadedLocal=false, pollT=null;
+const SYNC_TXT={local:"📱 Saved on this device only",loading:"☁️ Connecting…",synced:"☁️ Progress synced",offline:"⚠️ Not synced yet — saved on this device",readonly:"👀 View only — progress from Tito's device",badcode:"⚠️ Family code not recognised"};
+function famCode(){try{return localStorage.getItem("tito-family")||""}catch(e){return ""}}
+function workCount(st){let n=0;for(const k in (st||{})){const v=st[k];if(k==="tests"||k==="log"||k==="contacts"||k==="pin"||k==="_updated")continue;if(v&&typeof v==="object")n+=Object.keys(v).length;}return n;}
+function adopt(remote){ if(!remote||!remote.json)return false; if(!(remote.updated>(store._updated||0)))return false;
+  try{ store=JSON.parse(remote.json); try{localStorage.setItem(KEY,remote.json)}catch(e){} onRemote(); return true; }catch(e){return false;} }
+const httpBackend={
+  async get(){ const r=await fetch(SYNC_URL+"/api/progress",{headers:{"x-family-code":famCode()},cache:"no-store"}); if(r.status===401)throw{code:"auth"}; if(!r.ok)throw{code:"unavailable"}; return r.json(); },
+  async put(json,updated){ const r=await fetch(SYNC_URL+"/api/progress",{method:"PUT",headers:{"x-family-code":famCode(),"content-type":"application/json"},body:JSON.stringify({json,updated})});
+    if(r.status===401)throw{code:"auth"}; if(r.status===409)return{conflict:await r.json()}; if(!r.ok)throw{code:"unavailable"}; return{ok:true}; }
+};
+async function pollHttp(){
+  if(backend!==httpBackend||document.hidden)return;
+  try{ const remote=await httpBackend.get(); const mine=store._updated||0;
+    if(remote.json&&remote.updated>mine) adopt(remote);
+    else if(remote.updated<mine&&!uploadedLocal){ uploadedLocal=true; queueSync(); }
+    if(syncState!=="synced") setSync("synced");
+  }catch(e){ setSync(e&&e.code==="auth"?"badcode":"offline"); }
+}
+function startHttp(){
+  clearInterval(pollT); if(!famCode()){backend=null;setSync("local");return;}
+  backend=httpBackend; uploadedLocal=false; setSync("loading"); pollHttp();
+  pollT=setInterval(pollHttp,15000);
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) pollHttp(); });
+/* Linking a device: keep whichever copy holds more of Tito's work, so a new empty phone can't wipe her progress */
+async function linkDevice(code){
+  try{localStorage.setItem("tito-family",code)}catch(e){}
+  backend=httpBackend; clearInterval(pollT); setSync("loading");
+  try{
+    const remote=await httpBackend.get(); let remoteStore=null; try{remoteStore=remote.json?JSON.parse(remote.json):null}catch(e){}
+    const local=store;
+    if(remoteStore && workCount(remoteStore)>=workCount(local)){
+      store=remoteStore; ["pin","contacts"].forEach(k=>{ if(!store[k]&&local[k]) store[k]=local[k]; });
+      store._updated=Math.max(Date.now(),(remote.updated||0)+1);
+      try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}
+      await httpBackend.put(JSON.stringify(store),store._updated); toast("Linked — showing the family's progress");
+    } else {
+      store._updated=Math.max(Date.now(),(remote.updated||0)+1); try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}
+      await httpBackend.put(JSON.stringify(store),store._updated); toast("Linked — this device's progress is now shared");
+    }
+    uploadedLocal=true; setSync("synced"); pollT=setInterval(pollHttp,15000); render();
+  }catch(e){
+    if(e&&e.code==="auth"){ try{localStorage.removeItem("tito-family")}catch(_){} backend=null; setSync("local"); toast("That family code isn't right"); }
+    else { setSync("offline"); toast("Couldn't reach the server — try again in a minute"); pollT=setInterval(pollHttp,15000); }
+    render();
+  }
+}
 function setSync(s){syncState=s;document.querySelectorAll(".sync").forEach(el=>el.textContent=SYNC_TXT[s]);}
-function queueSync(){ if(!docRef||readOnly)return; clearTimeout(syncT); syncT=setTimeout(pushSync,700); }
+function queueSync(){ if(!backend||readOnly)return; clearTimeout(syncT); syncT=setTimeout(pushSync,700); }
 async function pushSync(){
   if(writing){again=true;return;} writing=true;
-  try{ await docRef.set({json:JSON.stringify(store),updated:store._updated||Date.now()}); setSync("synced"); }
-  catch(e){ if(e&&e.code==="invalid_argument"){readOnly=true;setSync("readonly");} else setSync("offline"); }
+  try{ const r=await backend.put(JSON.stringify(store),store._updated||Date.now()); if(r&&r.conflict) adopt(r.conflict); setSync("synced"); }
+  catch(e){ if(e&&e.code==="invalid_argument"){readOnly=true;setSync("readonly");} else if(e&&e.code==="auth") setSync("badcode"); else setSync("offline"); }
   writing=false; if(again){again=false;pushSync();}
 }
 function onRemote(){ const a=document.activeElement; if(a&&a.tagName==="INPUT")return; render(); }
 (async()=>{
   let db=null; try{ if(typeof claude!=="undefined"&&claude.use) db=await claude.use("db"); }catch(e){}
-  if(!db){setSync("local");return;}
+  if(!db){ startHttp(); return; }
   setSync("loading");
-  try{ docRef=db.doc("progress/tito"); }catch(e){setSync("local");return;}
+  try{ docRef=db.doc("progress/tito"); }catch(e){ startHttp(); return; }
+  backend={ async put(json,updated){ await docRef.set({json,updated}); return {ok:true}; } };
   const timer=setTimeout(()=>{ if(syncState==="loading") setSync("offline"); },10000);
   docRef.onSnapshot(snap=>{
     const firm=!snap.metadata.fromCache; if(firm) clearTimeout(timer);
@@ -583,6 +631,8 @@ function pinGo(){
   parentOK=true; view={screen:"parent"}; render();
 }
 const fmt=t=>new Date(t).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+function saveFam(){ const c=document.getElementById("fam").value.trim().toUpperCase().replace(/\s/g,""); if(c.length<6){toast("Check the family code");return;} linkDevice(c); }
+function unlinkFam(){ try{localStorage.removeItem("tito-family")}catch(e){} clearInterval(pollT); backend=null; setSync("local"); toast("This device is no longer linked"); render(); }
 function saveContacts(){ store.contacts={dad:document.getElementById("cDad").value.trim(),mum:document.getElementById("cMum").value.trim()}; save(); toast("Numbers saved"); }
 function renderParent(){
   if(!parentOK){view={screen:"pin"};return renderPin();}
@@ -611,6 +661,14 @@ function renderParent(){
     ${tk.length?tk.map(m=>`<div class="mist"><span>${MISTAKES[m].name}</span><span>${tally[m]}×</span></div>`).join(""):`<p class="sub">No mistakes recorded yet.</p>`}</div>
   <div class="card"><h3 style="margin-bottom:8px">Recent activity</h3>
     ${log.length?log.map(e=>`<div class="mist"><span>${esc(e.text)}</span><span class="sub" style="font-size:13px">${fmt(e.t)}</span></div>`).join(""):`<p class="sub">Nothing yet.</p>`}</div>
+  <div class="card"><h3 style="margin-bottom:6px">Share progress between phones</h3>
+    <p class="sub" style="margin-bottom:10px">Enter the family code once on each device: Tito's tablet, Dad's phone and Mum's phone. Her progress then updates on all of them automatically.</p>
+    ${famCode()?`<p style="margin:0 0 10px;font-weight:800;color:#0F6B46">✅ This device is linked</p>`:""}
+    <form onsubmit="event.preventDefault();saveFam()">
+      <input id="fam" class="tans" style="text-align:left;letter-spacing:2px" autocapitalize="characters" autocomplete="off" value="${esc(famCode())}" placeholder="Family code">
+      <div class="row" style="margin-top:10px"><button class="btn small" type="submit">${famCode()?"Update code":"Link this device"}</button>
+      ${famCode()?`<button class="link" type="button" onclick="unlinkFam()">Unlink this device</button>`:""}</div>
+    </form></div>
   <div class="card"><h3 style="margin-bottom:6px">Where to send her results</h3>
     <p class="sub" style="margin-bottom:10px">After each sheet Tito gets a button that opens Messages with her results ready to send. UK numbers like 07… are fine; other countries need the country code.</p>
     <form onsubmit="event.preventDefault();saveContacts()">
