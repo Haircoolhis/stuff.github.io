@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tito's Maths Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF8EE; --card:#FFFFFF; --ink:#2B2340; --muted:#6E6787; --line:#ECE3D4;
+  --purple:#6C4CF1; --purple-soft:#EEE9FF; --green:#1FA971; --green-soft:#E3F7EE;
+  --red:#E5484D; --red-soft:#FDECEC; --amber:#F2A516; --amber-soft:#FFF3D6;
+  --blue:#2F7DF6; --blue-soft:#E6F0FF; --radius:20px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:17px;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,.fred{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0}
+button{font:inherit;cursor:pointer;border:0}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:44px;height:44px;border-radius:14px;background:var(--purple);color:#fff;display:grid;place-items:center;font-family:Fredoka;font-size:24px;font-weight:700;transform:rotate(-6deg)}
+.brand h1{font-size:22px}
+.brand small{display:block;color:var(--muted);font-size:13px;font-weight:700}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:0 2px 0 var(--line),0 8px 24px rgba(43,35,64,.06);margin-bottom:16px}
+.btn{background:var(--purple);color:#fff;padding:13px 20px;border-radius:14px;font-weight:800;box-shadow:0 4px 0 #4A2FC4;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #4A2FC4}
+.btn.ghost{background:var(--purple-soft);color:var(--purple);box-shadow:0 4px 0 #D6CCFF}
+.btn.green{background:var(--green);box-shadow:0 4px 0 #137A51}
+.btn.amber{background:var(--amber);box-shadow:0 4px 0 #C2830C;color:#3A2600}
+.btn.small{padding:9px 14px;font-size:15px;border-radius:12px}
+.btn:disabled{opacity:.45;cursor:default}
+.link{background:none;color:var(--purple);font-weight:800;padding:6px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* home */
+.hello{font-size:28px;margin-bottom:4px}
+.sub{color:var(--muted);margin:0 0 4px}
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.step3{background:var(--bg);border-radius:14px;padding:12px}
+.step3 b{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font-family:Fredoka;margin-bottom:6px}
+.step3 p{margin:0;font-size:14.5px;font-weight:700}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.sheet{background:var(--card);border-radius:var(--radius);padding:18px;text-align:left;box-shadow:0 2px 0 var(--line),0 8px 24px rgba(43,35,64,.06);border:2px solid transparent;transition:border-color .15s}
+.sheet:hover{border-color:#DCD3FF}
+.sheet .day{font-family:Fredoka;font-size:26px;font-weight:600;color:var(--ink)}
+.sheet .topic{color:var(--muted);font-weight:700;font-size:14px;margin-bottom:12px}
+.bar{height:10px;background:var(--line);border-radius:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--green);border-radius:10px;transition:width .3s}
+.sheet .meta{display:flex;justify-content:space-between;font-size:13.5px;font-weight:800;color:var(--muted);margin-top:8px}
+.note{font-size:13px;color:#8A5A00;background:var(--amber-soft);border-radius:10px;padding:8px 10px;margin-top:10px;font-weight:700}
+
+/* practice */
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.dot{width:34px;height:34px;border-radius:10px;background:var(--card);color:var(--muted);font-weight:800;font-size:14px;box-shadow:0 2px 0 var(--line)}
+.dot.cur{outline:3px solid var(--purple);color:var(--ink)}
+.dot.star{background:var(--green);color:#fff;box-shadow:0 2px 0 #137A51}
+.dot.ok{background:var(--blue);color:#fff;box-shadow:0 2px 0 #1F5BB8}
+.dot.wrong{background:var(--red);color:#fff;box-shadow:0 2px 0 #B3262B}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.tq{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:0 2px 0 var(--line)}
+.tn{font-size:13px;font-weight:800;color:var(--muted)}
+.tsum{font-family:Fredoka;font-size:24px;font-weight:600;margin:2px 0 8px}
+.tans{width:100%;font-family:Fredoka;font-size:24px;padding:8px 10px;border-radius:12px;border:2px solid var(--line);outline:none;text-align:center;color:var(--ink)}
+.tans:focus{border-color:var(--purple)}
+.tans.filled{border-color:#CFC4FF;background:var(--purple-soft)}
+.mode-explain{font-size:13.5px;color:var(--muted);font-weight:700;margin-top:8px}
+.dot.help{background:var(--amber);color:#3A2600;box-shadow:0 2px 0 #C2830C}
+.qhead{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-weight:800;font-size:14px}
+.qtext{font-family:Fredoka;font-size:clamp(40px,10vw,64px);font-weight:600;text-align:center;margin:14px 0 6px;letter-spacing:.5px}
+.qtext .op{color:var(--purple);padding:0 .15em}
+.ansrow{display:flex;gap:10px;justify-content:center;align-items:center;margin:14px 0 6px;flex-wrap:wrap}
+.ans{font-family:Fredoka;font-size:34px;width:210px;text-align:center;padding:10px 12px;border-radius:16px;border:3px solid var(--line);background:#fff;color:var(--ink);outline:none}
+.ans:focus{border-color:var(--purple)}
+.ans.good{border-color:var(--green);background:var(--green-soft)}
+.ans.bad{border-color:var(--red);background:var(--red-soft);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.fb{border-radius:16px;padding:14px 16px;margin-top:12px;font-weight:700;line-height:1.45}
+.fb.good{background:var(--green-soft);color:#0F6B46}
+.fb.bad{background:var(--red-soft);color:#9B1C20}
+.fb.info{background:var(--blue-soft);color:#1B4E9E}
+.fb h3{font-size:20px;margin-bottom:4px}
+.helpers{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.navrow{display:flex;justify-content:space-between;margin-top:18px}
+
+/* column work */
+.work{margin-top:16px;background:#FCFAF6;border:2px dashed var(--line);border-radius:18px;padding:16px}
+.grid{display:grid;justify-content:center;margin:6px auto 10px;font-family:Fredoka;font-weight:500}
+.cell{width:42px;height:50px;display:grid;place-items:center;font-size:34px;position:relative;border-radius:8px}
+.cell.dp{width:18px}
+.cell.mark{height:26px;font-size:17px;color:var(--red);font-weight:600}
+.cell.mark.carry{color:var(--blue)}
+.cell.ph{color:#B9AFC9}
+.cell.ph::after{content:"";position:absolute;bottom:6px;left:12px;right:12px;height:2px;background:#D7CFE4}
+.cell.hl{background:var(--amber-soft)}
+.cell.struck::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:3px;background:var(--red);transform:rotate(-20deg);border-radius:2px}
+.cell.res{color:var(--purple);font-weight:600}
+.cell.op{color:var(--purple)}
+.rule{grid-column:1/-1;height:3px;background:var(--ink);border-radius:2px;margin:2px 0}
+.explain{background:#fff;border-radius:14px;padding:12px 14px;font-weight:700;min-height:52px;line-height:1.45}
+.explain .tag{display:inline-block;background:var(--purple-soft);color:var(--purple);border-radius:8px;padding:1px 8px;font-size:13px;margin-bottom:4px}
+.stepnav{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.stepcount{color:var(--muted);font-weight:800;font-size:14px}
+
+/* results */
+.big{font-family:Fredoka;font-size:56px;font-weight:700;text-align:center;color:var(--purple)}
+.stars{text-align:center;font-size:34px;letter-spacing:4px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13.5px;font-weight:800;color:var(--muted);margin:8px 0}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800}
+.p-star{background:var(--green-soft);color:#0F6B46}.p-ok{background:var(--blue-soft);color:#1B4E9E}.p-help{background:var(--amber-soft);color:#8A5A00}.p-wrong{background:var(--red-soft);color:#9B1C20}.p-none{background:#F1EEF6;color:var(--muted)}
+.mist{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-weight:800;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:3px;animation:fall 1.4s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@media (max-width:520px){
+  .steps3{grid-template-columns:1fr}
+  .cell{width:34px;height:44px;font-size:28px}
+  .cell.dp{width:14px}
+  .ans{width:170px;font-size:30px}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+/* ===================== WORKBOOK DATA =====================
+   Add new days here. Numbers are kept as text so "4.70" stays "4.70". */
+const SHEETS = [
+  { id:"d16", day:"Day 16", topic:"Adding & Subtracting Decimals", qs:[
+    [1,"3.1","+","7.18"],[2,"4.2","+","7.1"],[3,"4.87","+","3.3"],[4,"1.52","+","9.18"],
+    [5,"1.1","+","8.18"],[6,"4.17","+","1.12"],[7,"35.7","+","4.72"],[8,"5.7","+","5.33"],
+    [9,"62.2","+","4.63"],[10,"8.58","+","9"],[11,"9.33","+","4.1"],[12,"7.22","+","2.43"],
+    [13,"8.11","-","2.2"],[14,"2.33","-","1.11"],[15,"73.9","-","1.33"],[16,"6.55","-","5.77"],
+    [17,"12","-","4.32"],[18,"1.99","-","1.68"],[19,"3.22","-","1.11"],[20,"6.88","-","4"],
+    [21,"9.37","-","4.70"],[22,"3.51","-","2"],[23,"11.6","-","4.21"],[24,"6.22","-","3.81"]
+  ]},
+  { id:"d15", day:"Day 15", topic:"Adding & Subtracting Decimals",
+    note:"Questions 4, 8, 12 and 16 were cut off in the photo, so they're not here yet.", qs:[
+    [1,"0.57","+","45.8"],[2,"8.57","+","3.71"],[3,"2.7","+","4.4"],
+    [5,"7.5","+","12.66"],[6,"0.89","+","0.75"],[7,"53.1","+","27.4"],
+    [9,"8.74","-","1.29"],[10,"2.03","-","0.6"],[11,"20","-","6.781"],
+    [13,"53","-","0.356"],[14,"7.6","-","7.21"],[15,"1.6","-","0.3"]
+  ]}
+];
+
+/* ===================== MATHS ENGINE ===================== */
+const PLACE = {"-3":"thousandths","-2":"hundredths","-1":"tenths","0":"ones","1":"tens","2":"hundreds","3":"thousands"};
+function split(s){const [i,d=""]=s.split(".");return {i:(i.replace(/^0+(?=\d)/,"")||"0"),d};}
+function align(a,b){
+  const A=split(a),B=split(b);
+  const d=Math.max(A.d.length,B.d.length), L=Math.max(A.i.length,B.i.length);
+  const ta=A.i.padStart(L," ")+A.d.padEnd(d,"0"), tb=B.i.padStart(L," ")+B.d.padEnd(d,"0");
+  const phA=new Set(),phB=new Set();
+  for(let k=L+A.d.length;k<L+d;k++)phA.add(k);
+  for(let k=L+B.d.length;k<L+d;k++)phB.add(k);
+  return {d,L,ta,tb,phA,phB,addedZeros:phA.size+phB.size, addedA:A.d.length<d, addedB:B.d.length<d};
+}
+const dig=c=>c===" "?0:+c;
+function solve(a,op,b){
+  const al=align(a,op==="+"?b:b), n=al.ta.length, cols=[];
+  let carry=0,borrow=0; const res=new Array(n);
+  for(let k=n-1;k>=0;k--){
+    const top=dig(al.ta[k]),bot=dig(al.tb[k]),place=(al.L-1-k);
+    if(op==="+"){
+      const s=top+bot+carry; res[k]=s%10;
+      cols.push({k,place,top,bot,carryIn:carry,sum:s,res:s%10,carryOut:s>=10?1:0}); carry=s>=10?1:0;
+    }else{
+      let t=top-borrow; const bin=borrow; let bout=0;
+      if(t<bot){t+=10;bout=1}
+      res[k]=t-bot; cols.push({k,place,top,bot,borrowIn:bin,t,res:t-bot,borrowOut:bout}); borrow=bout;
+    }
+  }
+  let digits=res.join(""); if(carry) digits="1"+digits;
+  const lead=carry?1:0;
+  let ip=digits.slice(0,digits.length-al.d), dp=digits.slice(digits.length-al.d);
+  ip=ip.replace(/^0+(?=\d)/,""); if(ip==="")ip="0";
+  const full=al.d?ip+"."+dp:ip;
+  return {al,cols,finalCarry:carry,full,nice:tidy(full),value:+full};
+}
+function tidy(s){ if(!s.includes("."))return s; s=s.replace(/0+$/,"").replace(/\.$/,""); return s; }
+function digitsOnly(s){return String(s).replace(".","").replace(/^0+/,"").replace(/0+$/,"");}
+function same(x,y){return Math.abs(x-y)<1e-9}
+
+/* Work out WHY an answer is wrong (common decimal mistakes) */
+function diagnose(a,op,b,ansStr){
+  const ans=+ansStr, S=solve(a,op,b);
+  if(same(ans,S.value)) return null;
+  // 1. decimal points not lined up (digits lined up on the right instead)
+  const na=parseInt(a.replace(".","")), nb=parseInt(b.replace(".",""));
+  const wrongLine=String(Math.abs(op==="+"?na+nb:na-nb));
+  const aDp=(a.split(".")[1]||"").length, bDp=(b.split(".")[1]||"").length;
+  if(aDp!==bDp && digitsOnly(ansStr)===digitsOnly(wrongLine)) return "lineup";
+  // 2. right digits, decimal point in the wrong place
+  if(digitsOnly(ansStr)===digitsOnly(S.full)) return "point";
+  // 3. forgot to carry / forgot to borrow
+  const al=S.al; let out="";
+  for(let k=0;k<al.ta.length;k++){const t=dig(al.ta[k]),u=dig(al.tb[k]);out+= op==="+"?(t+u)%10:Math.abs(t-u);}
+  const v=al.d?+(out.slice(0,out.length-al.d)+"."+out.slice(out.length-al.d)):+out;
+  if(same(ans,v)) return op==="+"?"carry":"borrow";
+  if(op==="+" && S.cols.some(c=>c.carryOut) ) {
+    // carried but added the carry wrongly → check carries ignored only in some columns: treat off-by-power-of-ten as carry error
+    const diff=Math.abs(ans-S.value); for(let p=-3;p<=2;p++) if(same(diff,Math.pow(10,p))) return "carry";
+  }
+  if(op==="-" && S.cols.some(c=>c.borrowOut)){
+    const diff=Math.abs(ans-S.value); for(let p=-3;p<=2;p++) if(same(diff,Math.pow(10,p))) return "borrow";
+  }
+  // 4. added instead of subtracted / vice versa
+  const other=solve(a,op==="+"?"-":"+",b);
+  if(op==="+" && +a>=+b && same(ans,other.value)) return "wrongop";
+  if(op==="-" && same(ans,other.value)) return "wrongop";
+  return "other";
+}
+const MISTAKES={
+  lineup:{name:"Decimal points not lined up",tip:"It looks like the digits were lined up on the right instead of the decimal points. Put the decimal points directly on top of each other first, then fill the gaps with zeros."},
+  point:{name:"Decimal point in the wrong place",tip:"Your digits are right — great working! — but the decimal point has moved. Bring it straight down, in line with the points above."},
+  carry:{name:"Forgot to carry",tip:"One of the columns adds up to 10 or more. Write the ones digit and carry the 1 over to the next column on the left."},
+  borrow:{name:"Forgot to borrow (exchange)",tip:"In one column the top digit is smaller than the bottom digit. Borrow 1 from the column on the left — it becomes 10 more."},
+  wrongop:{name:"Used the wrong operation",tip:"Check the sign again — is it + or −?"},
+  other:{name:"Small slip",tip:"Not quite. Line the decimal points up, add zeros, then go column by column from the right."}
+};
+
+/* ===================== STORAGE ===================== */
+const KEY="tito-maths-v1";
+let store={};
+try{store=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){store={}}
+function save(){store._updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){};queueSync();}
+function logEvent(text){store.log=store.log||[];store.log.unshift({t:Date.now(),text});store.log=store.log.slice(0,60);}
+
+/* ---- shared progress (syncs between devices when available) ---- */
+let docRef=null, syncState="local", writing=false, again=false, readOnly=false, syncT=null, uploadedLocal=false;
+const SYNC_TXT={local:"📱 Saved on this device only",loading:"☁️ Connecting…",synced:"☁️ Progress synced",offline:"⚠️ Not synced yet — saved on this device",readonly:"👀 View only — progress from Tito's device"};
+function setSync(s){syncState=s;document.querySelectorAll(".sync").forEach(el=>el.textContent=SYNC_TXT[s]);}
+function queueSync(){ if(!docRef||readOnly)return; clearTimeout(syncT); syncT=setTimeout(pushSync,700); }
+async function pushSync(){
+  if(writing){again=true;return;} writing=true;
+  try{ await docRef.set({json:JSON.stringify(store),updated:store._updated||Date.now()}); setSync("synced"); }
+  catch(e){ if(e&&e.code==="invalid_argument"){readOnly=true;setSync("readonly");} else setSync("offline"); }
+  writing=false; if(again){again=false;pushSync();}
+}
+function onRemote(){ const a=document.activeElement; if(a&&a.tagName==="INPUT")return; render(); }
+(async()=>{
+  let db=null; try{ if(typeof claude!=="undefined"&&claude.use) db=await claude.use("db"); }catch(e){}
+  if(!db){setSync("local");return;}
+  setSync("loading");
+  try{ docRef=db.doc("progress/tito"); }catch(e){setSync("local");return;}
+  const timer=setTimeout(()=>{ if(syncState==="loading") setSync("offline"); },10000);
+  docRef.onSnapshot(snap=>{
+    const firm=!snap.metadata.fromCache; if(firm) clearTimeout(timer);
+    const mine=store._updated||0;
+    if(snap.exists){
+      const d=snap.data()||{}, theirs=+d.updated||0;
+      if(theirs>mine){ try{ store=JSON.parse(d.json); try{localStorage.setItem(KEY,d.json)}catch(e){} onRemote(); }catch(e){} }
+      else if(theirs<mine && firm && !snap.metadata.hasPendingWrites && !uploadedLocal){ uploadedLocal=true; queueSync(); }
+    } else if(firm && mine && !uploadedLocal){ uploadedLocal=true; queueSync(); }
+    if(firm && syncState!=="readonly" && syncState!=="offline") setSync("synced");
+    if(firm && syncState==="loading") setSync("synced");
+  }, ()=>{ clearTimeout(timer); setSync("offline"); });
+})();
+function rec(sid,n){store[sid]=store[sid]||{};store[sid][n]=store[sid][n]||{tries:[],status:null,mistakes:[],shown:false,lined:false};return store[sid][n];}
+function statusOf(r){ if(!r||!r.status)return null; return r.status; }
+
+/* ===================== UI ===================== */
+const app=document.getElementById("app");
+let view={screen:"home"};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const opSym=o=>o==="-"?"−":"+";
+function sheetById(id){return SHEETS.find(s=>s.id===id)||view.extraSheet}
+
+function header(back){
+  return `<div class="top"><div class="brand"><div class="logo">T</div><div><h1>Tito's Maths</h1><small class="sync">${SYNC_TXT[syncState]}</small></div></div>
+  ${back?`<button class="btn ghost small" onclick="go('home')">← All sheets</button>`:""}</div>`;
+}
+function progress(s){
+  const done=s.qs.filter(q=>statusOf(store[s.id]?.[q[0]])).length;
+  const stars=s.qs.filter(q=>statusOf(store[s.id]?.[q[0]])==="star").length;
+  return {done,stars,total:s.qs.length};
+}
+
+function renderHome(){
+  app.innerHTML=header(false)+`
+  <div class="card">
+    <h2 class="hello">Hi Tito! 👋</h2>
+    <p class="sub">Pick a sheet. Try each question yourself first — if you get stuck, the app will show you how.</p>
+    <div class="steps3">
+      <div class="step3"><b>1</b><p>Line up the decimal points and add zeros as place holders.</p></div>
+      <div class="step3"><b>2</b><p>Add or subtract like normal, starting from the right.</p></div>
+      <div class="step3"><b>3</b><p>Bring the decimal point straight down.</p></div>
+    </div>
+    <p class="mode-explain">📝 <b>Test</b>: answer everything first, marks and corrections at the end. &nbsp;·&nbsp; <b>Practise</b>: check each answer as you go.</p>
+  </div>
+  <div class="sheets">${SHEETS.map(s=>{const p=progress(s);return `
+    <div class="sheet">
+      <div class="day">${s.day}</div><div class="topic">${esc(s.topic)} · ${p.total} questions</div>
+      <div class="bar"><i style="width:${p.done/p.total*100}%"></i></div>
+      <div class="meta"><span>${p.done}/${p.total} done</span><span>⭐ ${p.stars}</span></div>
+      ${s.note?`<div class="note">${esc(s.note)}</div>`:""}
+      <div class="row" style="margin-top:14px">
+        <button class="btn small" onclick="startTest('${s.id}')">📝 ${testInProgress(s.id)?"Continue test":"Do as a test"}</button>
+        <button class="btn ghost small" onclick="openSheet('${s.id}')">Practise</button>
+      </div>
+    </div>`}).join("")}
+  </div>
+  <div class="row" style="justify-content:center;margin-top:18px"><button class="link" onclick="go('pin')">👨‍👩‍👧 Parent area</button></div>`;
+}
+
+function openSheet(id){
+  if(testInProgress(id)){toast("Finish the test first!");startTest(id);return;}
+  const s=sheetById(id); let i=s.qs.findIndex(q=>!statusOf(store[id]?.[q[0]])); if(i<0)i=0;
+  view={screen:"q",sid:id,i,work:null}; render();
+}
+
+function renderQ(){
+  const s=sheetById(view.sid), q=s.qs[view.i], [n,a,op,b]=q, r=rec(s.id,n);
+  const st=r.status;
+  const dots=s.qs.map((qq,j)=>{const t=statusOf(store[s.id]?.[qq[0]]);return `<button class="dot ${j===view.i?"cur":""} ${t||""}" onclick="jump(${j})">${qq[0]}</button>`}).join("");
+  const last=r.tries[r.tries.length-1];
+  let fb="";
+  if(st==="star") fb=`<div class="fb good"><h3>${pick(["Brilliant!","Spot on!","Nailed it!","Superstar!"])} ⭐</h3>${a} ${opSym(op)} ${b} = <b>${solve(a,op,b).nice}</b>. First try!</div>`;
+  else if(st==="ok") fb=`<div class="fb good"><h3>You got it! ✓</h3>${a} ${opSym(op)} ${b} = <b>${solve(a,op,b).nice}</b>. Well done for sticking with it.</div>`;
+  else if(st==="help") fb=`<div class="fb info"><h3>Answer: ${solve(a,op,b).nice}</h3>Have a look at the steps below, then try the next one on your own.</div>`;
+  else if(st==="wrong"&&last===undefined) fb=`<div class="fb bad"><h3>This one was left blank</h3>Have a go now — line up the decimal points first.</div>`;
+  else if(last!==undefined){ const m=r.mistakes[r.mistakes.length-1]; fb=`<div class="fb bad"><h3>Not quite — you wrote ${esc(last)}</h3>${MISTAKES[m].tip} Try again!</div>`;}
+  const locked=!!st&&st!=="wrong";
+  app.innerHTML=header(true)+`
+  <div class="dots">${dots}</div>
+  <div class="card">
+    <div class="qhead"><span>${esc(s.day)} · Question ${n}</span><span>${view.i+1} of ${s.qs.length}</span></div>
+    <div class="qtext">${a}<span class="op">${opSym(op)}</span>${b}</div>
+    <form class="ansrow" onsubmit="event.preventDefault();check()">
+      <input id="ans" class="ans ${st==="star"||st==="ok"?"good":(last!==undefined?"bad":"")}" inputmode="decimal" autocomplete="off" placeholder="?" value="${locked?esc(st==="help"?(last??""):last):""}" ${locked?"disabled":""} aria-label="Your answer">
+      ${locked?"":`<button class="btn green" type="submit">Check</button>`}
+    </form>
+    ${fb}
+    <div class="helpers">
+      ${!locked?`<button class="btn ghost small" onclick="lineUp()">📏 Line it up</button>`:""}
+      <button class="btn amber small" onclick="showMe()">💡 Show me how</button>
+    </div>
+    <div id="workArea"></div>
+    <div class="navrow">
+      <button class="btn ghost small" onclick="move(-1)" ${view.i===0?"disabled":""}>← Back</button>
+      ${view.i===s.qs.length-1?`<button class="btn small" onclick="go('results')">See my score →</button>`:`<button class="btn small" onclick="move(1)">Next →</button>`}
+    </div>
+  </div>`;
+  if(view.work) drawWork();
+  const inp=document.getElementById("ans");
+  if(inp&&!locked){ inp.addEventListener("input",()=>{inp.value=inp.value.replace(/[^0-9.]/g,"").replace(/(\..*)\./g,"$1");inp.classList.remove("bad")}); if(matchMedia("(pointer:fine)").matches) inp.focus(); }
+}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+function check(){
+  const s=sheetById(view.sid),[n,a,op,b]=s.qs[view.i],r=rec(s.id,n);
+  const v=document.getElementById("ans").value.trim();
+  if(!v||v==="."){toast("Type your answer first");return;}
+  r.tries.push(v);
+  const m=diagnose(a,op,b,v);
+  if(!m){ const wasWrong=r.status==="wrong"; r.status = r.tries.length===1 && !r.lined && !r.blank ? "star" : "ok";
+    if(wasWrong && !s.qs.some(q=>store[s.id]?.[q[0]]?.status==="wrong")) logEvent(`Finished all corrections for ${s.day}`);
+    save(); confetti(); }
+  else { r.mistakes.push(m); save(); }
+  render();
+}
+function lineUp(){ const s=sheetById(view.sid),[n]=s.qs[view.i]; rec(s.id,n).lined=true; save(); view.work={mode:"line",step:0}; render(); }
+function showMe(){
+  const s=sheetById(view.sid),[n]=s.qs[view.i],r=rec(s.id,n);
+  r.shown=true; if(!r.status||r.status==="wrong"){ r.status="help"; logEvent(`Used "Show me how" on ${s.day} Q${n}`); } save();
+  view.work={mode:"steps",step:0}; render();
+  document.getElementById("workArea").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* Build the step-by-step column method */
+function buildSteps(a,op,b){
+  const S=solve(a,op,b), al=S.al, steps=[];
+  const whole=[a,b].filter(x=>!x.includes(".")&&al.d);
+  const wholeText=whole.length?` A whole number like <b>${whole[0]}</b> has its decimal point hiding at the end: ${whole[0]} = ${whole[0]}.${"0".repeat(al.d)}.`:"";
+  const placeHolderText = (al.addedZeros
+    ? `Line up the decimal points. ${al.addedA&&al.addedB?"Both numbers need":al.addedA?`<b>${a}</b> needs`:`<b>${b}</b> needs`} zero${al.addedZeros>1?"s":""} added as place holder${al.addedZeros>1?"s":""} so every column is full. Adding a zero after the decimal point doesn't change the number.`
+    : `Line up the decimal points, one on top of the other. Both numbers already have the same number of decimal places, so no extra zeros are needed.`) + wholeText;
+  steps.push({tag:"Step 1 · Line up",text:placeHolderText,done:0});
+  S.cols.forEach((c,idx)=>{
+    const pl=PLACE[c.place]||"column"; let t="";
+    if(op==="+"){
+      const parts=[c.top,c.bot].concat(c.carryIn?["1 (carried)"]:[]);
+      t=`<b>${cap(pl)} column:</b> ${parts.join(" + ")} = <b>${c.sum}</b>. `;
+      t+= c.carryOut?`That's 10 or more, so write <b>${c.res}</b> and carry <b>1</b> to the ${PLACE[c.place+1]||"next"} column.`:`Write <b>${c.res}</b>.`;
+      if(idx===S.cols.length-1&&S.finalCarry) t+=` There's no column left, so the carried 1 goes at the front.`;
+    }else{
+      const shown=c.top-c.borrowIn, blank=al.tb[c.k]===" ";
+      if(shown<0){
+        t=`<b>${cap(pl)} column:</b> this 0 had nothing to lend, so first it borrows 1 from the ${PLACE[c.place+1]||"next"} column and becomes 10. It gave 1 to the right, so now it's <b>9</b>. 9 − ${c.bot} = <b>${c.res}</b>.`;
+      } else {
+      if(c.borrowIn) t=`<b>${cap(pl)} column:</b> this ${c.top} lent 1 to the column on its right, so it's now <b>${shown}</b>. `;
+      else t=`<b>${cap(pl)} column:</b> `;
+      if(blank && !c.borrowOut){ t+=`There's nothing underneath to take away, so write <b>${c.res}</b>.`; }
+      else if(c.borrowOut){
+        t+=`${shown} is smaller than ${c.bot}, so borrow 1 from the ${PLACE[c.place+1]||"next"} column. ${shown} becomes <b>${c.t}</b>. ${c.t} − ${c.bot} = <b>${c.res}</b>.`;
+      } else t+=`${shown} − ${c.bot} = <b>${c.res}</b>.`;
+      }
+    }
+    steps.push({tag:`Step 2 · ${cap(pl)}`,text:t,done:idx+1,col:c.k});
+  });
+  const trail = S.full!==S.nice ? ` The zero on the end can be dropped: <b>${S.full} = ${S.nice}</b>.` : "";
+  steps.push({tag:"Step 3 · Decimal point",text:`Bring the decimal point straight down. The answer is <b>${S.nice}</b>.${trail}`,done:S.cols.length,point:true});
+  return {S,steps};
+}
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+function drawWork(){
+  const s=sheetById(view.sid),[n,a,op,b]=s.qs[view.i];
+  const {S,steps}=buildSteps(a,op,b), al=S.al, w=view.work;
+  const lineOnly=w.mode==="line";
+  const st=lineOnly?{done:0}:steps[w.step];
+  const n0=al.ta.length, extra=1; // one spare column for final carry / op sign
+  // processed columns
+  const processed=new Set(S.cols.slice(0,st.done).map(c=>c.k));
+  const colTpl=[]; // build column list: op/carry col, int cols, point, dec cols
+  colTpl.push({type:"lead"});
+  for(let k=0;k<n0;k++){ if(k===al.L) colTpl.push({type:"dp"}); colTpl.push({type:"d",k}); }
+  if(al.d===0) colTpl.push({type:"dp",hidden:true});
+  const cls=c=>c.type==="dp"?"cell dp":"cell";
+  const byK={}; S.cols.forEach(c=>byK[c.k]=c);
+  // marks row
+  const marks=colTpl.map(c=>{
+    if(c.type==="lead") return `<div class="cell mark carry">${(op==="+"&&S.finalCarry&&st.done===S.cols.length&&!lineOnly)?"":""}</div>`;
+    if(c.type==="dp") return `<div class="cell dp mark"></div>`;
+    if(lineOnly) return `<div class="cell mark"></div>`;
+    const col=byK[c.k], right=byK[c.k+1];
+    if(op==="+"){ const show=right&&processed.has(c.k+1)&&right.carryOut; return `<div class="cell mark carry">${show?"1":""}</div>`; }
+    let mk="";
+    if(processed.has(c.k)){ if(col.t!==col.top) mk=col.t; }
+    else if(right&&processed.has(c.k+1)&&right.borrowOut&&col.top-1>=0) mk=col.top-1;
+    return `<div class="cell mark">${mk}</div>`;
+  }).join("");
+  const struckK=new Set(); if(op==="-"&&!lineOnly) S.cols.forEach(c=>{ const right=byK[c.k+1]; if((processed.has(c.k)&&c.t!==c.top)||(right&&processed.has(c.k+1)&&right.borrowOut)) struckK.add(c.k)});
+  const hlK=lineOnly?null:st.col;
+  const rowFor=(str,ph,isTop)=>colTpl.map(c=>{
+    if(c.type==="lead") return `<div class="cell op">${isTop?"":opSym(op)}</div>`;
+    if(c.type==="dp") return `<div class="cell dp">${c.hidden?"":"."}</div>`;
+    const ch=str[c.k]; const isPh=ph.has(c.k);
+    return `<div class="${cls(c)} ${isPh?"ph":""} ${hlK===c.k?"hl":""} ${isTop&&struckK.has(c.k)?"struck":""}">${ch===" "?"":ch}</div>`;
+  }).join("");
+  // result row
+  const resRow=colTpl.map(c=>{
+    if(lineOnly) return `<div class="${cls(c)}"></div>`;
+    if(c.type==="lead") return `<div class="cell res">${S.finalCarry&&st.done===S.cols.length?"1":""}</div>`;
+    if(c.type==="dp") return `<div class="cell dp res">${st.point&&!c.hidden?".":""}</div>`;
+    const col=byK[c.k]; const showD=processed.has(c.k);
+    return `<div class="cell res ${hlK===c.k?"hl":""}">${showD?col.res:""}</div>`;
+  }).join("");
+  const tpl=colTpl.map(c=>c.type==="dp"?"auto":"auto").join(" ");
+  const grid=`<div class="grid" style="grid-template-columns:${tpl}">${marks}${rowFor(al.ta,al.phA,true)}${rowFor(al.tb,al.phB,false)}<div class="rule"></div>${resRow}</div>`;
+  let body;
+  if(lineOnly){
+    body=`<div class="explain"><span class="tag">Lined up for you</span><br>${steps[0].text} Now work it out column by column from the right, and type your answer above.</div>
+    <div class="stepnav"><button class="link" onclick="view.work=null;render()">Hide</button><span></span></div>`;
+  }else{
+    body=`<div class="explain"><span class="tag">${st.tag}</span><br>${st.text}</div>
+    <div class="stepnav"><button class="btn ghost small" onclick="stepW(-1)" ${w.step===0?"disabled":""}>← Back</button>
+    <span class="stepcount">${w.step+1} / ${steps.length}</span>
+    <button class="btn small" onclick="stepW(1)" ${w.step===steps.length-1?"disabled":""}>Next step →</button></div>`;
+  }
+  document.getElementById("workArea").innerHTML=`<div class="work">${grid}${body}</div>`;
+}
+function stepW(d){view.work.step+=d;drawWork();}
+function move(d){view.i+=d;view.work=null;render();window.scrollTo({top:0,behavior:"smooth"});}
+function jump(j){view.i=j;view.work=null;render();}
+
+function renderResults(){
+  const s=sheetById(view.sid), rows=s.qs.map(q=>({q,r:store[s.id]?.[q[0]]}));
+  const star=rows.filter(x=>x.r?.status==="star").length, ok=rows.filter(x=>x.r?.status==="ok").length,
+        help=rows.filter(x=>x.r?.status==="help").length, wrong=rows.filter(x=>x.r?.status==="wrong").length, none=rows.length-star-ok-help-wrong;
+  const wasTest=store.tests?.[s.id]?.submitted;
+  const pct=Math.round((star+ok)/rows.length*100);
+  const tally={}; rows.forEach(x=>(x.r?.mistakes||[]).forEach(m=>tally[m]=(tally[m]||0)+1));
+  const tk=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]);
+  const starsTxt=pct>=90?"⭐⭐⭐":pct>=70?"⭐⭐":pct>=40?"⭐":"💪";
+  const label={wrong:["To correct ✗","p-wrong"],star:["First try ⭐","p-star"],ok:["Got it after a retry","p-ok"],help:["Needed help","p-help"]};
+  app.innerHTML=header(true)+(view.fromParent?`<div class="row" style="margin:-6px 0 12px"><button class="btn ghost small" onclick="go('parent')">← Parent area</button></div>`:"")+`
+  <div class="card">
+    <div class="qhead"><span>${esc(s.day)} ${wasTest?"test ":""}results</span>${wasTest?`<span>Test score: ${star}/${rows.length}</span>`:""}</div>
+    <div class="big">${star+ok}/${rows.length}</div>
+    <div class="stars">${starsTxt}</div>
+    <p class="sub" style="text-align:center">${pct>=90?"Outstanding work, Tito!":pct>=70?"Great job — nearly there!":pct>=40?"Good effort. Practise the tricky ones again.":"Keep going — every question makes you stronger."}</p>
+    ${wrong?`<div class="row" style="justify-content:center;margin:12px 0"><button class="btn amber" onclick="corrections()">✏️ Go through my corrections (${wrong})</button></div>`:""}
+    <div class="legend"><span style="--c:var(--green)">${star} first try</span><span style="--c:var(--blue)">${ok} after retry</span><span style="--c:var(--amber)">${help} needed help</span>${wrong?`<span style="--c:var(--red)">${wrong} to correct</span>`:""}<span style="--c:#D9D3E4">${none} not done</span></div>
+  </div>
+  ${view.fromParent?"":sendBlock(s.id)}
+  ${tk.length?`<div class="card"><h3 style="margin-bottom:8px">Things to work on</h3>${tk.map(m=>`<div class="mist"><span>${MISTAKES[m].name}</span><span>${tally[m]}×</span></div>`).join("")}
+    <p class="sub" style="margin-top:10px">${MISTAKES[tk[0]].tip}</p>
+    <div class="row" style="margin-top:10px"><button class="btn amber" onclick="extra()">🎯 5 extra practice questions</button></div></div>`:""}
+  <div class="card"><h3 style="margin-bottom:8px">Question by question</h3>
+    <table><tr><th>#</th><th>Question</th><th>Her answers</th><th>Result</th></tr>
+    ${rows.map(({q,r})=>{const [n,a,op,b]=q,l=r?.status?label[r.status]:["Not done","p-none"];return `<tr><td>${n}</td><td>${a} ${opSym(op)} ${b} = <b>${solve(a,op,b).nice}</b></td><td>${(r?.tries||[]).map(esc).join(", ")||"—"}</td><td><span class="pill ${l[1]}">${l[0]}</span></td></tr>`}).join("")}
+    </table>
+    <div class="row" style="margin-top:14px">
+      <button class="btn ghost small" onclick="copyReport()">📋 Copy report</button>
+    </div>
+  </div>`;
+}
+function reportText(){
+  const s=sheetById(view.sid); let out=`Tito – ${s.day} (${s.topic})\n`;
+  const rows=s.qs.map(q=>({q,r:store[s.id]?.[q[0]]}));
+  const good=rows.filter(x=>["star","ok"].includes(x.r?.status)).length;
+  out+=`Score: ${good}/${rows.length} (first try: ${rows.filter(x=>x.r?.status==="star").length})\n\n`;
+  rows.forEach(({q,r})=>{const [n,a,op,b]=q;const st=r?.status||"not done";out+=`Q${n}: ${a} ${opSym(op)} ${b} = ${solve(a,op,b).nice} | her answers: ${(r?.tries||[]).join(", ")||"—"} | ${st==="star"?"first try":st==="ok"?"after retry":st==="help"?"needed help":st==="wrong"?"wrong, not yet corrected":st}${r?.mistakes?.length?" | "+[...new Set(r.mistakes)].map(m=>MISTAKES[m].name).join("; "):""}\n`});
+  return out;
+}
+function shortReport(sid){
+  const s=sheetById(sid), t=store.tests?.[sid];
+  const rows=s.qs.map(q=>({q,r:store[sid]?.[q[0]]}));
+  const right=rows.filter(x=>["star","ok"].includes(x.r?.status)).length;
+  let out=`📚 Tito's Maths – ${s.day}\n`;
+  if(t&&t.submitted) out+=`📝 Test score: ${t.score}/${t.total}\n`;
+  out+=`✅ Now correct: ${right}/${rows.length}\n`;
+  const toFix=rows.filter(x=>x.r?.status==="wrong"), helped=rows.filter(x=>x.r?.status==="help");
+  if(toFix.length) out+=`\n❌ Still to correct:\n`+toFix.map(({q,r})=>`Q${q[0]}: ${q[1]} ${opSym(q[2])} ${q[3]} – wrote ${r.tries.length?r.tries[r.tries.length-1]:"nothing"} (answer ${solve(q[1],q[2],q[3]).nice})`).join("\n")+"\n";
+  if(helped.length) out+=`\n💡 Needed help: `+helped.map(x=>"Q"+x.q[0]).join(", ")+"\n";
+  const tally={}; rows.forEach(x=>(x.r?.mistakes||[]).forEach(m=>tally[m]=(tally[m]||0)+1));
+  const tk=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]);
+  if(tk.length) out+=`\n🔎 Mistakes: `+tk.map(m=>`${MISTAKES[m].name} (${tally[m]})`).join(", ")+"\n";
+  if(!toFix.length&&right===rows.length) out+=`\n🌟 All done!\n`;
+  out+=`\nSent ${fmt(Date.now())}`;
+  return out;
+}
+function waNumber(n){ let d=String(n||"").replace(/\D/g,""); if(d.startsWith("00"))d=d.slice(2); else if(d.startsWith("0"))d="44"+d.slice(1); return d; }
+function waLink(num,text){ const d=waNumber(num); return `https://wa.me/${d}?text=${encodeURIComponent(text)}`; }
+const SMS_SEP=/iPhone|iPad|Mac/.test(navigator.userAgent)?"&":"?";
+function smsLink(num,text){ return `sms:${num?"+"+waNumber(num):""}${SMS_SEP}body=${encodeURIComponent(text)}`; }
+function sendBlock(sid){
+  const c=store.contacts||{}, text=shortReport(sid), btns=[];
+  const who=[["dad","Dad"],["mum","Mum"]].filter(([k])=>c[k]);
+  who.forEach(([k,label])=>{
+    btns.push(`<a class="btn green" style="text-decoration:none" href="${smsLink(c[k],text)}" onclick="logEvent('Sent ${sid} results to ${label} (Messages)');save()">💬 Message ${label}</a>`);
+  });
+  if(!who.length) btns.push(`<a class="btn green" style="text-decoration:none" href="${smsLink("",text)}">💬 Send by Messages</a>`);
+  return `<div class="card" style="text-align:center"><h3 style="margin-bottom:6px">📤 Send your results</h3>
+    <p class="sub" style="margin-bottom:12px">Opens Messages with your results typed in. Just press send.</p>
+    <div class="row" style="justify-content:center">${btns.join("")}</div>
+    <p class="sub" style="margin-top:12px;font-size:14px">Button not working? <button class="link" onclick="copyShort('${sid}')">Copy my results</button> and paste them into Messages.</p></div>`;
+}
+async function copyShort(sid){ try{await navigator.clipboard.writeText(shortReport(sid));toast("Copied — now paste into Messages");logEvent(`Copied ${sid} results to send`);save();}catch(e){toast("Couldn't copy on this device")} }
+async function copyReport(){ try{await navigator.clipboard.writeText(reportText());toast("Report copied")}catch(e){toast("Couldn't copy on this device")} }
+function retryWrong(){
+  const s=sheetById(view.sid); const ids=s.qs.filter(q=>{const st=store[s.id]?.[q[0]]?.status;return st!=="star"}).map(q=>q[0]);
+  if(!ids.length){toast("Nothing to redo — all first try!");return;}
+  ids.forEach(n=>{delete store[s.id][n]}); save(); openSheet(s.id);
+}
+function corrections(){ const s=sheetById(view.sid); const i=s.qs.findIndex(q=>store[s.id]?.[q[0]]?.status==="wrong"); view={screen:"q",sid:s.id,i:Math.max(i,0),work:null,extraSheet:view.extraSheet}; render(); window.scrollTo(0,0); }
+let parentOK=false, confirmKey=null;
+function twice(key,msg){ if(confirmKey!==key){confirmKey=key;toast(msg);setTimeout(()=>{if(confirmKey===key)confirmKey=null},3000);return false;} confirmKey=null;return true; }
+function resetSheet(id){ if(!parentOK)return; const s=SHEETS.find(x=>x.id===id); if(!twice("s"+id,`Tap again to reset ${s.day}`))return;
+  delete store[id]; if(store.tests)delete store.tests[id]; logEvent(`Parent reset ${s.day}`); save(); toast(`${s.day} reset`); render(); }
+function resetAll(){ if(!parentOK)return; if(!twice("all","Tap again to reset EVERYTHING"))return;
+  const keep={pin:store.pin,log:store.log}; store=keep; logEvent("Parent reset all progress"); save(); toast("All progress reset"); render(); }
+
+/* ===================== PARENT AREA ===================== */
+function renderPin(){
+  const setting=!store.pin;
+  app.innerHTML=header(true)+`<div class="card" style="max-width:420px;margin:0 auto;text-align:center">
+    <h2 style="margin-bottom:6px">👨‍👩‍👧 Parent area</h2>
+    <p class="sub">${setting?"Choose a 4-digit PIN. Keep it secret from Tito!":"Enter the parent PIN."}</p>
+    <form onsubmit="event.preventDefault();pinGo()" style="margin-top:14px">
+      <input id="pin1" class="ans" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" aria-label="PIN">
+      ${setting?`<input id="pin2" class="ans" style="margin-top:10px" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="again" aria-label="Repeat PIN">`:""}
+      <div style="margin-top:14px"><button class="btn" type="submit">${setting?"Save PIN":"Unlock"}</button></div>
+    </form></div>`;
+  document.getElementById("pin1").focus();
+}
+function pinGo(){
+  const a=document.getElementById("pin1").value, b=document.getElementById("pin2")?.value;
+  if(!/^\d{4}$/.test(a)){toast("PIN must be 4 numbers");return;}
+  if(!store.pin){ if(a!==b){toast("The two PINs don't match");return;} store.pin=a; save(); }
+  else if(a!==store.pin){ toast("Wrong PIN"); document.getElementById("pin1").value=""; return; }
+  parentOK=true; view={screen:"parent"}; render();
+}
+const fmt=t=>new Date(t).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+function saveContacts(){ store.contacts={dad:document.getElementById("cDad").value.trim(),mum:document.getElementById("cMum").value.trim()}; save(); toast("Numbers saved"); }
+function renderParent(){
+  if(!parentOK){view={screen:"pin"};return renderPin();}
+  const tally={};
+  SHEETS.forEach(s=>s.qs.forEach(q=>(store[s.id]?.[q[0]]?.mistakes||[]).forEach(m=>tally[m]=(tally[m]||0)+1)));
+  const tk=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]);
+  const rows=SHEETS.map(s=>{
+    const p=progress(s), t=store.tests?.[s.id];
+    const toFix=s.qs.filter(q=>store[s.id]?.[q[0]]?.status==="wrong").length;
+    let test="Not tested yet";
+    if(t&&!t.submitted) test=`Test in progress (${Object.values(t.answers||{}).filter(v=>v&&v!==".").length}/${s.qs.length} answered)`;
+    else if(t&&t.submitted) test=`Test: <b>${t.score??"?"}/${t.total??s.qs.length}</b>${t.at?` · ${fmt(t.at)}`:""}`;
+    return `<div class="card" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><h3>${s.day}</h3><span class="sub" style="font-weight:800">${p.done}/${p.total} done · ⭐ ${p.stars}</span></div>
+      <div class="bar" style="margin:8px 0"><i style="width:${p.done/p.total*100}%"></i></div>
+      <p style="margin:4px 0">${test}</p>
+      ${toFix?`<p style="margin:4px 0;color:#9B1C20;font-weight:800">${toFix} correction${toFix>1?"s":""} still to do</p>`:""}
+      <div class="row" style="margin-top:10px"><button class="btn ghost small" onclick="view={screen:'results',sid:'${s.id}',fromParent:true};render()">See answers</button>
+      <button class="link" style="color:var(--red)" onclick="resetSheet('${s.id}')">Reset ${s.day}</button></div></div>`;}).join("");
+  const log=(store.log||[]).slice(0,20);
+  app.innerHTML=header(true)+`
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>👨‍👩‍👧 Parent area</h2><button class="btn ghost small" onclick="parentOK=false;go('home')">🔒 Lock</button></div>
+    <p class="sub" style="margin-top:6px"><span class="sync">${SYNC_TXT[syncState]}</span></p></div>
+  ${rows}
+  <div class="card"><h3 style="margin-bottom:8px">Mistakes across all sheets</h3>
+    ${tk.length?tk.map(m=>`<div class="mist"><span>${MISTAKES[m].name}</span><span>${tally[m]}×</span></div>`).join(""):`<p class="sub">No mistakes recorded yet.</p>`}</div>
+  <div class="card"><h3 style="margin-bottom:8px">Recent activity</h3>
+    ${log.length?log.map(e=>`<div class="mist"><span>${esc(e.text)}</span><span class="sub" style="font-size:13px">${fmt(e.t)}</span></div>`).join(""):`<p class="sub">Nothing yet.</p>`}</div>
+  <div class="card"><h3 style="margin-bottom:6px">Where to send her results</h3>
+    <p class="sub" style="margin-bottom:10px">After each sheet Tito gets a button that opens Messages with her results ready to send. UK numbers like 07… are fine; other countries need the country code.</p>
+    <form onsubmit="event.preventDefault();saveContacts()">
+      <label style="font-weight:800;font-size:14px">Dad's mobile number</label>
+      <input id="cDad" class="tans" style="margin:4px 0 10px;text-align:left" inputmode="tel" value="${esc(store.contacts?.dad||"")}" placeholder="07…">
+      <label style="font-weight:800;font-size:14px">Mum's mobile number</label>
+      <input id="cMum" class="tans" style="margin:4px 0 10px;text-align:left" inputmode="tel" value="${esc(store.contacts?.mum||"")}" placeholder="07…">
+      <button class="btn small" type="submit">Save numbers</button>
+    </form></div>
+  <div class="card"><h3 style="margin-bottom:8px">Settings</h3>
+    <div class="row"><button class="btn ghost small" onclick="delete store.pin;save();parentOK=false;go('pin')">Change PIN</button>
+    <button class="link" style="color:var(--red)" onclick="resetAll()">Reset all progress</button></div></div>`;
+}
+
+/* ===================== TEST MODE ===================== */
+function testInProgress(id){const t=store.tests&&store.tests[id];return !!(t&&!t.submitted);}
+function startTest(id){
+  store.tests=store.tests||{}; const t=store.tests[id];
+  if(!t||t.submitted){ delete store[id]; store.tests[id]={answers:{},submitted:false}; save(); }
+  view={screen:"test",sid:id}; render(); window.scrollTo(0,0);
+}
+function renderTest(){
+  const s=sheetById(view.sid), t=store.tests[s.id];
+  const filled=n=>{const v=(t.answers[n]||"").trim();return v&&v!=="."};
+  const count=()=>s.qs.filter(q=>filled(q[0])).length;
+  app.innerHTML=header(true)+`
+  <div class="card"><h2>📝 ${esc(s.day)} test</h2>
+    <p class="sub">Answer every question, then tap <b>Finish &amp; mark</b>. Your score and corrections show at the end. Use paper for your working out.</p>
+    <div class="bar" style="margin-top:10px"><i id="tbar" style="width:${count()/s.qs.length*100}%"></i></div>
+    <div class="meta" style="display:flex;justify-content:space-between;font-weight:800;color:var(--muted);font-size:13.5px;margin-top:6px"><span id="tcount">${count()} of ${s.qs.length} answered</span><span>Your answers save as you type</span></div>
+  </div>
+  <div class="tgrid">${s.qs.map(([n,a,op,b])=>`<div class="tq"><div class="tn">Question ${n}</div><div class="tsum">${a} ${opSym(op)} ${b} =</div><input class="tans ${filled(n)?"filled":""}" data-n="${n}" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="?" value="${esc(t.answers[n]||"")}" aria-label="Answer to question ${n}"></div>`).join("")}</div>
+  <div class="row" style="justify-content:center;margin-top:18px"><button class="btn green" onclick="submitTest()">✅ Finish &amp; mark</button></div>`;
+  const inputs=[...app.querySelectorAll(".tans")];
+  inputs.forEach((inp,idx)=>{
+    inp.addEventListener("input",()=>{inp.value=inp.value.replace(/[^0-9.]/g,"").replace(/(\..*)\./g,"$1");t.answers[inp.dataset.n]=inp.value;save();
+      inp.classList.toggle("filled",filled(inp.dataset.n));
+      document.getElementById("tcount").textContent=`${count()} of ${s.qs.length} answered`;document.getElementById("tbar").style.width=count()/s.qs.length*100+"%";});
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();(inputs[idx+1]||inp).focus();}});
+  });
+}
+function submitTest(){
+  const s=sheetById(view.sid), t=store.tests[s.id];
+  const blanks=s.qs.filter(q=>{const v=(t.answers[q[0]]||"").trim();return !v||v==="."}).length;
+  if(blanks&&view.confirm!=="submit"){view.confirm="submit";toast(`${blanks} not answered — tap Finish again to mark anyway`);setTimeout(()=>view.confirm=null,3500);return;}
+  let right=0;
+  s.qs.forEach(([n,a,op,b])=>{
+    const v=(t.answers[n]||"").trim(); store[s.id]=store[s.id]||{};
+    const r=store[s.id][n]={tries:[],status:null,mistakes:[],shown:false,lined:false};
+    if(!v||v==="."){r.status="wrong";r.blank=true;return;}
+    r.tries.push(v); const m=diagnose(a,op,b,v);
+    if(!m){r.status="star";right++;} else {r.status="wrong";r.mistakes.push(m);}
+  });
+  t.submitted=true; t.score=right; t.total=s.qs.length; t.at=Date.now();
+  logEvent(`Finished ${s.day} test: ${right}/${s.qs.length}`); save(); document.getElementById("toast").classList.remove("on");
+  view={screen:"results",sid:s.id}; render(); window.scrollTo(0,0);
+  if(right/s.qs.length>=0.7) confetti();
+}
+
+/* Extra practice: new questions of the same kind she struggled with */
+function rnd(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function mkNum(intMax,dp){ const i=rnd(0,intMax); if(!dp)return String(i||rnd(1,9)); let d=""; for(let k=0;k<dp;k++)d+=rnd(k===dp-1?1:0,9); return i+"."+d; }
+function extra(){
+  const s=sheetById(view.sid); const tally={};
+  s.qs.forEach(q=>(store[s.id]?.[q[0]]?.mistakes||[]).forEach(m=>tally[m]=(tally[m]||0)+1));
+  const subFocus=(tally.borrow||0)>(tally.carry||0); const qs=[];
+  for(let k=1;k<=5;k++){
+    const op= tally.borrow&&tally.carry? (k%2?"+":"-") : subFocus?"-":(tally.carry?"+":(k%2?"+":"-"));
+    let a,b,tries=0;
+    do{ const da=rnd(0,2),db=da===2?rnd(0,1):rnd(1,2); a=mkNum(op==="-"?40:30,da); b=mkNum(op==="-"?9:30,db); tries++; }
+    while(tries<200 && (op==="-"? !(+a>+b) || !solve(a,op,b).cols.some(c=>c.borrowOut) : !solve(a,op,b).cols.some(c=>c.carryOut)));
+    qs.push([k,a,op,b]);
+  }
+  const id="x"+Date.now(); view.extraSheet={id,day:"Extra practice",topic:"Based on "+s.day,qs};
+  delete store[id]; openSheet(id);
+}
+
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("on"),1800);}
+function confetti(){const c=document.getElementById("confetti");const cols=["#6C4CF1","#1FA971","#F2A516","#2F7DF6","#E5484D"];for(let k=0;k<40;k++){const i=document.createElement("i");i.style.left=Math.random()*100+"vw";i.style.background=cols[k%5];i.style.animationDelay=Math.random()*.3+"s";c.appendChild(i);setTimeout(()=>i.remove(),1900);}}
+function go(s){view={screen:s,sid:view.sid,extraSheet:view.extraSheet};render();window.scrollTo(0,0);}
+function render(){ if(view.screen==="home")renderHome(); else if(view.screen==="q")renderQ(); else if(view.screen==="test")renderTest(); else if(view.screen==="pin")renderPin(); else if(view.screen==="parent")renderParent(); else renderResults(); }
+render();
+</script>
+</body>
+</html>
