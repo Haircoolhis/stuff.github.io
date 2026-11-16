@@ -538,7 +538,7 @@ function qAns(s,q){ return isV(s)? vAnsText(s,q) : answer(q[1],q[2],q[3]).nice; 
 /* where the current answer lives: practice → view.sel, test → test answers */
 function vGet(ctx,n){ if(ctx==="p") return view.sel; const t=store.tests[view.sid]; return t.answers[n]; }
 function vPut(ctx,n,v){
-  if(ctx==="p"){ view.sel=v; }
+  if(ctx==="p"){ view.sel=v; const S=sheetById(view.sid); rec(S.id,+n).draft=v; clearTimeout(vPut._t); vPut._t=setTimeout(save,600); }
   else { store.tests[view.sid].answers[n]=v; save(); vCount(); }
   const s=sheetById(view.sid), q=s.qs.find(x=>x[0]===+n), el=document.getElementById(`vq-${ctx}-${n}`);
   if(el && vKind(s,q)!=="text" && vKind(s,q)!=="grid") el.innerHTML=vAnswerHTML(s,q,v,ctx,false);
@@ -561,7 +561,7 @@ function vGridIn(ctx,n,i,el){
 }
 function vGridStart(q){ const g=vX(q).given||[0,0], gi=g[0]*5+g[1]; let s=""; for(let i=0;i<25;i++) s+= q[2][i]==="#"?"#":(i===gi?q[2][i]:" "); return s; }
 
-function vWriteIn(ctx,n,i,el){ let cur=vGet(ctx,n); cur=Array.isArray(cur)?cur.slice():[]; cur[i]=el.value; if(ctx==="p") view.sel=cur; else { store.tests[view.sid].answers[n]=cur; clearTimeout(vWriteIn._t); vWriteIn._t=setTimeout(()=>{save();vCount();},500); } const c=el.parentNode.querySelector(".wc"); if(c) c.textContent=(el.value.trim().split(/\s+/).filter(Boolean).length)+" words"; }
+function vWriteIn(ctx,n,i,el){ let cur=vGet(ctx,n); cur=Array.isArray(cur)?cur.slice():[]; cur[i]=el.value; if(ctx==="p"){ view.sel=cur; rec(view.sid,+n).draft=cur; clearTimeout(vPut._t); vPut._t=setTimeout(save,600); } else { store.tests[view.sid].answers[n]=cur; clearTimeout(vWriteIn._t); vWriteIn._t=setTimeout(()=>{save();vCount();},500); } const c=el.parentNode.querySelector(".wc"); if(c) c.textContent=(el.value.trim().split(/\s+/).filter(Boolean).length)+" words"; }
 function vAnswerHTML(s,q,v,ctx,locked){
   const k=vKind(s,q), n=q[0], dis=locked?"disabled":"";
   if(k==="write"||k==="open"){
@@ -601,7 +601,7 @@ function vSection(s,q){ let sec=""; for(const x of s.qs){ if(vX(x).sec)sec=vX(x)
 
 function renderQV(){
   const s=sheetById(view.sid), q=s.qs[view.i], n=q[0], r=rec(s.id,n), st=r.status, last=r.tries[r.tries.length-1];
-  if(view.selFor!==s.id+":"+n){ view.sel=null; view.selFor=s.id+":"+n; }
+  if(view.selFor!==s.id+":"+n){ view.sel=r.draft!==undefined?JSON.parse(JSON.stringify(r.draft)):null; view.selFor=s.id+":"+n; }
   const locked=st==="star"||st==="ok"||st==="help"||st==="review";
   const dots=s.qs.map((qq,j)=>{const t=statusOf(store[s.id]?.[qq[0]]);return `<button class="dot ${j===view.i?"cur":""} ${t||""}" onclick="jump(${j})">${qq[0]}</button>`}).join("");
   let fb="";
@@ -809,9 +809,9 @@ function renderHome(){
     ${nx?`<p class="sub">Up next: <b>${esc(isV(nx)?nx.short:nx.day)}</b> · ${esc(nx.topic)}</p>
     <div class="row" style="margin-top:12px">
       <button class="btn" onclick="startTest('${nx.id}')">📝 ${testInProgress(nx.id)?"Continue":"Start"} test</button>
-      <button class="btn ghost" onclick="openSheet('${nx.id}')">Practise</button>
+      ${canPractise(nx)?`<button class="btn ghost" onclick="openSheet('${nx.id}')">Practise</button>`:""}
     </div>`:`<p class="sub">${allDone?"You've done every sheet in this book. Amazing! 🌟":"You've finished everything that's unlocked. 🎉 Ask Mum or Dad to unlock the next sheet."}</p>`}
-    <p class="mode-explain">📝 <b>Test</b>: answer everything first, marks and corrections at the end. &nbsp;·&nbsp; <b>Practise</b>: check each answer as you go.</p>
+    <p class="mode-explain">📝 <b>Test</b>: answer everything first, marks and corrections at the end.${testFirst()?" Practise opens after the test.":" &nbsp;·&nbsp; <b>Practise</b>: check each answer as you go."}</p>
   </div>
   ${groups.map(g=>{ const T=TOPICS[g.t]||GN[g.t], done=g.sheets.filter(sheetDone).length, open=g.sheets.includes(nx);
     const first=g.sheets[0].day.replace("Day ",""), last=g.sheets[g.sheets.length-1].day.replace("Day ","");
@@ -820,7 +820,7 @@ function renderHome(){
     <div class="minis">${g.sheets.map(s=>{ const pp=progress(s); if(!isUnlocked(s)) return `<div class="mini locked"><div class="d">${isV(s)?esc(s.short):s.day}<span>🔒</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}<p class="lbl" style="margin:8px 0 0">Locked</p></div>`; return `<div class="mini ${s===nx?"next":""}">
       <div class="d">${isV(s)?esc(s.short):s.day}<span>⭐ ${pp.stars}</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}
       <div class="bar"><i style="width:${pp.done/pp.total*100}%"></i></div>
-      <div class="row"><button class="btn small" onclick="startTest('${s.id}')">📝 ${testInProgress(s.id)?"Resume":"Test"}</button><button class="btn ghost small" onclick="openSheet('${s.id}')">Practise</button></div>
+      <div class="row"><button class="btn small" onclick="startTest('${s.id}')">📝 ${testInProgress(s.id)?"Resume":"Test"}</button>${canPractise(s)?`<button class="btn ghost small" onclick="openSheet('${s.id}')">Practise</button>`:""}</div>
     </div>`}).join("")}</div></details>`; }).join("")}
   <div class="row" style="justify-content:center;margin-top:18px"><button class="link" onclick="go('pin')">👨‍👩‍👧 Parent area</button></div>`;
 }
@@ -843,7 +843,10 @@ function pMark(sid,n,right){
   logEvent(`Parent marked ${sLabel(s)} Q${n} as ${right?"right ✓":"wrong ✗"}`); save(); toast(`Marked Q${n} ${right?"right":"wrong"}`); render();
 }
 function L_all(bk,on){ SHEETS.filter(x=>x.book===bk).forEach((x,i)=>{ if(i)setUnlock(x.id,on); }); logEvent(`Parent ${on?"unlocked":"locked"} all ${bk} sheets`); render(); }
+function testFirst(){ return !(store.settings&&store.settings.testFirst===false); }
+function canPractise(s){ if(!s||String(s.id).startsWith("x")||!testFirst())return true; const t=store.tests?.[s.id]; return !!(t&&t.submitted); }
 function openSheet(id){
+  if(isUnlocked(sheetById(id))&&!canPractise(sheetById(id))){ toast("📝 Do the test first, then you can practise"); startTest(id); return; }
   if(!isUnlocked(sheetById(id))){ toast("🔒 This sheet is locked. Ask Mum or Dad to unlock it."); return; }
   if(testInProgress(id)){toast("Finish the test first!");startTest(id);return;}
   const s=sheetById(id); let i=s.qs.findIndex(q=>!statusOf(store[id]?.[q[0]])); if(i<0)i=0;
@@ -870,7 +873,7 @@ function renderQ(){
     <div class="qtext">${fmtN(a)}<span class="op">${opSym(op)}</span>${fmtN(b)}</div>
     ${answer(a,op,b).round?`<p class="sub" style="text-align:center;font-weight:800">This one doesn't divide exactly: round your answer to 2 decimal places.</p>`:""}
     <form class="ansrow" onsubmit="event.preventDefault();check()">
-      <input id="ans" class="ans ${st==="star"||st==="ok"?"good":(last!==undefined?"bad":"")}" inputmode="decimal" autocomplete="off" placeholder="?" value="${locked?esc(st==="help"?(last??""):last):""}" ${locked?"disabled":""} aria-label="Your answer">
+      <input id="ans" class="ans ${st==="star"||st==="ok"?"good":(last!==undefined?"bad":"")}" inputmode="decimal" autocomplete="off" placeholder="?" value="${locked?esc(st==="help"?(last??""):last):esc(r.draft||"")}" ${locked?"disabled":""} aria-label="Your answer">
       ${locked?"":`<button class="btn green" type="submit">Check</button>`}
     </form>
     ${fb}
@@ -887,7 +890,7 @@ function renderQ(){
   </div>`;
   if(view.work) drawWork();
   const inp=document.getElementById("ans");
-  if(inp&&!locked){ inp.addEventListener("input",()=>{inp.value=inp.value.replace(/[^0-9.]/g,"").replace(/(\..*)\./g,"$1");inp.classList.remove("bad")}); if(matchMedia("(pointer:fine)").matches) inp.focus(); }
+  if(inp&&!locked){ inp.addEventListener("input",()=>{inp.value=inp.value.replace(/[^0-9.]/g,"").replace(/(\..*)\./g,"$1");inp.classList.remove("bad");r.draft=inp.value;clearTimeout(inp._t);inp._t=setTimeout(save,600);}); if(matchMedia("(pointer:fine)").matches) inp.focus(); }
 }
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
@@ -1152,6 +1155,7 @@ function renderParent(){
       return `<div class="flagq"><b>${esc(s.short)} ${esc(s.title)} · Q${q[0]}</b><br><span class="lbl">${esc(qText(s,q))}</span><br>My answer: <b>${esc(qAns(s,q))}</b> · Tito: <b>${last?esc(last):"not answered yet"}</b>${r?.parentMarked?` · 👤 marked ${r.parentMarked}`:""}
       ${last?`<div class="pm"><button class="y" onclick="pMark('${s.id}',${q[0]},true)">✓ Tito is right</button><button class="n" onclick="pMark('${s.id}',${q[0]},false)">✗ Tito is wrong</button></div>`:""}</div>`; }).join("")}</div>`; })()}
   <div class="card"><h3 style="margin-bottom:6px">🔓 Unlock sheets</h3>
+    <label class="switch"><input type="checkbox" ${testFirst()?"checked":""} onchange="store.settings={...(store.settings||{}),testFirst:this.checked};save();render()"> Test first: practice opens only after she's done the sheet's test</label>
     <label class="switch"><input type="checkbox" ${lockOn()?"checked":""} onchange="store.settings={...(store.settings||{}),lockOn:this.checked};save();render()"> Lock sheets until I unlock them</label>
     ${lockOn()?`<label class="switch"><input type="checkbox" ${autoNext()?"checked":""} onchange="store.settings={...(store.settings||{}),autoNext:this.checked};save();render()"> Unlock the next sheet automatically when she finishes one</label>
     ${["Maths","Verbal","English","NVR"].map(bk=>{ const L=SHEETS.filter(x=>x.book===bk); return `<p style="margin:12px 0 0;font-weight:800">${({Maths:"🔢 Maths",Verbal:"🔤 Verbal Reasoning",English:"📚 English",NVR:"🔷 Non-Verbal"})[bk]} <span class="lbl">(${L.filter(isUnlocked).length}/${L.length} unlocked)</span></p>
