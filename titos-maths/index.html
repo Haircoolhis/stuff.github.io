@@ -18,6 +18,9 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,syst
 h1,h2,h3,.fred{font-family:Fredoka,Nunito,sans-serif;font-weight:600;margin:0}
 button{font:inherit;cursor:pointer;border:0}
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+@media (min-width:900px){ .wrap{max-width:960px} .tgrid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))} }
+@media (min-width:700px){ .booktabs button{flex:1 1 20%} }
+input,textarea,select{font-size:16px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
 .brand{display:flex;align-items:center;gap:10px}
 .logo{width:44px;height:44px;border-radius:14px;background:var(--purple);color:#fff;display:grid;place-items:center;font-family:Fredoka;font-size:24px;font-weight:700;transform:rotate(-6deg)}
@@ -89,6 +92,8 @@ details.howto li{margin:4px 0;font-weight:700}
 .mini .btn.small{padding:7px 10px;font-size:13.5px}
 .mini.next{outline:3px solid var(--purple)}
 .mini.locked{opacity:.55}
+details.bkd{border-top:1px solid var(--line);padding:10px 0}details.bkd summary{cursor:pointer}
+.bsel{font:inherit;font-size:15px;padding:6px 8px;border-radius:10px;border:2px solid var(--line);max-width:100%;background:#fff}
 .pm{display:inline-flex;gap:4px;margin-top:4px;flex-wrap:wrap}.pm button{padding:3px 8px;border-radius:8px;font-weight:800;font-size:13px;background:var(--bg);border:1.5px solid var(--line)}
 .pm button.y{color:#0F6B46}.pm button.n{color:#9B1C20}
 .flagq{border-bottom:1px solid var(--line);padding:10px 0}
@@ -692,6 +697,9 @@ const KEY="tito-maths-v1";
 let store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){store={}}
 function save(){store._updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){};queueSync();}
+function flushNow(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} try{ if(typeof backend!=="undefined"&&backend&&!readOnly){ clearTimeout(syncT); pushSync(); } }catch(e){} }
+addEventListener("pagehide",flushNow); document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushNow(); });
+setInterval(()=>{ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} },15000);
 function logEvent(text){store.log=store.log||[];store.log.unshift({t:Date.now(),text});store.log=store.log.slice(0,60);}
 
 /* ---- shared progress (syncs between devices when available) ---- */
@@ -817,7 +825,9 @@ function renderHome(){
     const first=g.sheets[0].day.replace("Day ",""), last=g.sheets[g.sheets.length-1].day.replace("Day ","");
     const range=isV(g.sheets[0])?`${g.sheets.length} page${g.sheets.length>1?"s":""}`:`Days ${first}–${last}`;
     return `<details class="group" ${open?"open":""}><summary><div><h3>${esc(T.name)}</h3><small>${range} · ${done}/${g.sheets.length} done</small></div><span class="chev">▶</span></summary>
-    <div class="minis">${g.sheets.map(s=>{ const pp=progress(s); if(!isUnlocked(s)) return `<div class="mini locked"><div class="d">${isV(s)?esc(s.short):s.day}<span>🔒</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}<p class="lbl" style="margin:8px 0 0">Locked</p></div>`; return `<div class="mini ${s===nx?"next":""}">
+    <div class="minis">${g.sheets.filter(s=>!(isBookDone(s)&&hideBook())).map(s=>{ const pp=progress(s);
+      if(isBookDone(s)) return `<div class="mini locked"><div class="d">${isV(s)?esc(s.short):s.day}<span>📕</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}<p class="lbl" style="margin:8px 0 0">Done in book</p></div>`;
+      if(!isUnlocked(s)) return `<div class="mini locked"><div class="d">${isV(s)?esc(s.short):s.day}<span>🔒</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}<p class="lbl" style="margin:8px 0 0">Locked</p></div>`; return `<div class="mini ${s===nx?"next":""}">
       <div class="d">${isV(s)?esc(s.short):s.day}<span>⭐ ${pp.stars}</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}
       <div class="bar"><i style="width:${pp.done/pp.total*100}%"></i></div>
       <div class="row"><button class="btn small" onclick="startTest('${s.id}')">📝 ${testInProgress(s.id)?"Resume":"Test"}</button>${canPractise(s)?`<button class="btn ghost small" onclick="openSheet('${s.id}')">Practise</button>`:""}</div>
@@ -830,7 +840,17 @@ function lockOn(){ return !(store.settings&&store.settings.lockOn===false); }
 function autoNext(){ return !(store.settings&&store.settings.autoNext===false); }
 function isUnlocked(s){ if(!s||String(s.id).startsWith("x")||!lockOn())return true; if(store.unlocked&&store.unlocked[s.id])return true; return SHEETS.find(x=>x.book===s.book)===s; }
 function setUnlock(id,on){ store.unlocked=store.unlocked||{}; if(on)store.unlocked[id]=true; else delete store.unlocked[id]; save(); }
-function sheetFinished(s){ const t=store.tests?.[s.id]; return (t&&t.submitted)||sheetDone(s); }
+function isBookDone(s){ return !!(s&&store.bookDone&&store.bookDone[s.id]); }
+function hideBook(){ return !!(store.settings&&store.settings.hideBook); }
+function sheetFinished(s){ const t=store.tests?.[s.id]; return isBookDone(s)||(t&&t.submitted)||sheetDone(s); }
+function setBookDone(id,on,quiet){ store.bookDone=store.bookDone||{}; const s=sheetById(id);
+  if(on){ store.bookDone[id]=true; if(!quiet)logEvent(`Parent marked ${sLabel(s)} as done in the book`); maybeUnlockNext(s); }
+  else { delete store.bookDone[id]; if(!quiet)logEvent(`Parent gave ${sLabel(s)} back in the app`); }
+  save(); }
+function bookDoneBefore(bk,id){ const L=SHEETS.filter(x=>x.book===bk), i=L.findIndex(x=>x.id===id); if(i<0)return;
+  L.slice(0,i).forEach(x=>{ store.bookDone=store.bookDone||{}; store.bookDone[x.id]=true; });
+  if(lockOn()) setUnlock(id,true);
+  logEvent(`Parent marked ${i} ${bk} sheet${i===1?"":"s"} before ${sLabel(L[i])} as done in the book`); save(); toast(`📕 ${i} sheet${i===1?"":"s"} marked done in book`); render(); }
 function maybeUnlockNext(s){ if(!s||!SHEETS.includes(s)||!lockOn()||!autoNext()||!sheetFinished(s))return;
   const L=SHEETS.filter(x=>x.book===s.book), nx=L[L.indexOf(s)+1]; if(nx&&!isUnlocked(nx)){ setUnlock(nx.id,true); logEvent(`${sLabel(nx)} unlocked automatically`); toast(`🔓 ${isV(nx)?nx.short:nx.day} is now unlocked!`); } }
 function flaggedQs(){ const out=[]; SHEETS.forEach(s=>s.qs.forEach(q=>{ if(isV(s)&&vX(q).flag) out.push({s,q}); })); return out; }
@@ -846,6 +866,7 @@ function L_all(bk,on){ SHEETS.filter(x=>x.book===bk).forEach((x,i)=>{ if(i)setUn
 function testFirst(){ return !(store.settings&&store.settings.testFirst===false); }
 function canPractise(s){ if(!s||String(s.id).startsWith("x")||!testFirst())return true; const t=store.tests?.[s.id]; return !!(t&&t.submitted); }
 function openSheet(id){
+  if(isBookDone(sheetById(id))&&!parentOK){ toast("📕 You've done this one in your book!"); return; }
   if(isUnlocked(sheetById(id))&&!canPractise(sheetById(id))){ toast("📝 Do the test first, then you can practise"); startTest(id); return; }
   if(!isUnlocked(sheetById(id))){ toast("🔒 This sheet is locked. Ask Mum or Dad to unlock it."); return; }
   if(testInProgress(id)){toast("Finish the test first!");startTest(id);return;}
@@ -1130,7 +1151,7 @@ function renderParent(){
   const tally={};
   SHEETS.forEach(s=>s.qs.forEach(q=>(store[s.id]?.[q[0]]?.mistakes||[]).forEach(m=>tally[m]=(tally[m]||0)+1)));
   const tk=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]);
-  const active=SHEETS.filter(s=>progress(s).done>0||store.tests?.[s.id]);
+  const active=SHEETS.filter(s=>(progress(s).done>0||store.tests?.[s.id])&&!isBookDone(s));
   const untouched=SHEETS.length-active.length;
   const rows=`<div class="card"><h3 style="margin-bottom:8px">Sheets</h3>
     ${active.length?`<table class="ptable"><tr><th>Sheet</th><th>Done</th><th>Test</th><th>To fix</th><th></th></tr>
@@ -1154,6 +1175,13 @@ function renderParent(){
     ${F.map(({s,q})=>{ const r=store[s.id]?.[q[0]]; const last=r?.tries?.[r.tries.length-1];
       return `<div class="flagq"><b>${esc(s.short)} ${esc(s.title)} · Q${q[0]}</b><br><span class="lbl">${esc(qText(s,q))}</span><br>My answer: <b>${esc(qAns(s,q))}</b> · Tito: <b>${last?esc(last):"not answered yet"}</b>${r?.parentMarked?` · 👤 marked ${r.parentMarked}`:""}
       ${last?`<div class="pm"><button class="y" onclick="pMark('${s.id}',${q[0]},true)">✓ Tito is right</button><button class="n" onclick="pMark('${s.id}',${q[0]},false)">✗ Tito is wrong</button></div>`:""}</div>`; }).join("")}</div>`; })()}
+  <div class="card"><h3 style="margin-bottom:6px">📕 Done in the book</h3>
+    <p class="sub" style="margin-bottom:6px">Tick sheets Tito has already done in her paper book. She can't open them in the app, and the next sheet unlocks.</p>
+    <label class="switch"><input type="checkbox" ${hideBook()?"checked":""} onchange="store.settings={...(store.settings||{}),hideBook:this.checked};save();render()"> Hide these sheets from her screen completely</label>
+    ${["Maths","Verbal","English","NVR"].map(bk=>{ const L=SHEETS.filter(x=>x.book===bk); const n=L.filter(isBookDone).length; return `<details class="bkd"><summary><b>${({Maths:"🔢 Maths",Verbal:"🔤 Verbal Reasoning",English:"📚 English",NVR:"🔷 Non-Verbal"})[bk]}</b> <span class="lbl">(${n}/${L.length} done in book)</span></summary>
+      <div class="ulist">${L.map(x=>`<label><input type="checkbox" ${isBookDone(x)?"checked":""} onchange="setBookDone('${x.id}',this.checked);render()">${isV(x)?esc(x.short):x.day.replace("Day ","D")}</label>`).join("")}</div>
+      <div class="row" style="align-items:center"><span class="lbl">Mark everything before</span><select class="bsel" id="bsel-${bk}">${L.slice(1).map(x=>`<option value="${x.id}">${esc(isV(x)?x.short+" "+x.title:x.day)}</option>`).join("")}</select><button class="btn ghost small" onclick="bookDoneBefore('${bk}',document.getElementById('bsel-${bk}').value)">Mark done</button></div></details>`;}).join("")}
+  </div>
   <div class="card"><h3 style="margin-bottom:6px">🔓 Unlock sheets</h3>
     <label class="switch"><input type="checkbox" ${testFirst()?"checked":""} onchange="store.settings={...(store.settings||{}),testFirst:this.checked};save();render()"> Test first: practice opens only after she's done the sheet's test</label>
     <label class="switch"><input type="checkbox" ${lockOn()?"checked":""} onchange="store.settings={...(store.settings||{}),lockOn:this.checked};save();render()"> Lock sheets until I unlock them</label>
@@ -1191,6 +1219,7 @@ function renderParent(){
 /* ===================== TEST MODE ===================== */
 function testInProgress(id){const t=store.tests&&store.tests[id];return !!(t&&!t.submitted);}
 function startTest(id){
+  if(isBookDone(sheetById(id))&&!parentOK){ toast("📕 You've done this one in your book!"); return; }
   if(!isUnlocked(sheetById(id))){ toast("🔒 This sheet is locked. Ask Mum or Dad to unlock it."); return; }
   store.tests=store.tests||{}; const t=store.tests[id];
   if(!t||t.submitted){ delete store[id]; store.tests[id]={answers:{},submitted:false}; save(); }
