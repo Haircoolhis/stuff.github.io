@@ -630,7 +630,7 @@ function sheetPages(s){ return PAGES&&PAGES.sheets&&PAGES.sheets[s.id] ? PAGES.s
 function pagesPanel(s){ const P=sheetPages(s); if(!P.length) return "";
   return `<details class="bookpg" ${view.pgOpen===false?"":"open"} ontoggle="view.pgOpen=this.open"><summary>📖 Book page${P.length>1?"s":""} <span class="lbl">tap a page to zoom</span></summary>
     <div class="pgs">${P.map((u,i)=>`<img src="${u}" alt="Book page ${i+1}" onclick="pageZoom(${i})">`).join("")}</div></details>`; }
-function pageZoom(i){ const s=sheetById(view.sid), P=sheetPages(s); const o=document.createElement("div"); o.className="zoom";
+function pageZoom(i,sid){ const s=sheetById(sid||view.sid), P=sheetPages(s); const o=document.createElement("div"); o.className="zoom";
   o.innerHTML=`<button class="btn small zx" onclick="this.parentNode.remove()">✕ Close</button><div class="zin">${P.map(u=>`<img src="${u}">`).join("")}</div>`;
   document.body.appendChild(o); const im=o.querySelectorAll(".zin img")[i]; if(im) setTimeout(()=>im.scrollIntoView(),50); }
 setTimeout(pagesLoad,0);
@@ -1087,6 +1087,7 @@ function renderResults(){
   ${tk.length?`<div class="card"><h3 style="margin-bottom:8px">Things to work on</h3>${tk.map(m=>`<div class="mist"><span>${MISTAKES[m].name}</span><span>${tally[m]}×</span></div>`).join("")}
     <p class="sub" style="margin-top:10px">${MISTAKES[tk[0]].tip}</p>
     ${isV(s)?"":`<div class="row" style="margin-top:10px"><button class="btn amber" onclick="extra()">🎯 5 extra practice questions</button></div>`}</div>`:""}
+  ${isV(s)&&sheetPages(s).length?`<div class="card pgcard">${pagesPanel(s)}</div>`:""}
   <div class="card"><h3 style="margin-bottom:8px">Question by question</h3>
     ${view.fromParent&&parentOK?`<p class="sub" style="margin-bottom:8px">👤 Tap ✓ or ✗ to mark any answer yourself. It updates her score.</p>`:""}
     <table><tr><th>#</th><th>Question</th><th>Her answers</th><th>Result</th></tr>
@@ -1199,7 +1200,7 @@ function renderParent(){
   ${(()=>{ const R=[]; SHEETS.forEach(s=>s.qs.forEach(q=>{ const r=store[s.id]?.[q[0]]; if(r&&r.status==="review") R.push({s,q,r}); }));
     return `<div class="card"><h3 style="margin-bottom:6px">✍️ Answers to mark ${R.length?`<span class="pill p-help">${R.length}</span>`:""}</h3>
     ${R.length?R.map(({s,q,r})=>`<div class="flagq"><b>${esc(s.book)} · ${esc(s.title)} · Q${q[0]}</b><br><span class="lbl">${esc(vStem(s,q))}</span>
-      <div class="herans">${esc(vShow(s,q,r.answerFull)||r.tries[r.tries.length-1]||"")}</div><span class="lbl">Guide: ${esc(q[3])}</span>
+      <div class="herans">${esc(vShow(s,q,r.answerFull)||r.tries[r.tries.length-1]||"")}</div>${sheetPages(s).length?`<button class="link" onclick="pageZoom(0,'${s.id}')">📖 View book page</button><br>`:""}<span class="lbl">Guide: ${esc(q[3])}</span>
       <div class="pm"><button class="y" onclick="pMark('${s.id}',${q[0]},true)">✓ Good</button><button class="n" onclick="pMark('${s.id}',${q[0]},false)">✗ Needs another go</button></div></div>`).join(""):`<p class="sub">Nothing waiting. Writing tasks, unusual answers and Non-Verbal answers without an answer key appear here.</p>`}</div>`; })()}
   ${(()=>{ const F=flaggedQs(); return `<div class="card"><h3 style="margin-bottom:6px">⚑ Questions to check</h3>
     <p class="sub" style="margin-bottom:6px">I worked these answers out myself and I'm not sure of them (part of the page was cut off, or the pattern could be read two ways). Check them against the book's answer pages and mark Tito's answer yourself.</p>
