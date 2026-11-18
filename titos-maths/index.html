@@ -133,6 +133,16 @@ details.bkd{border-top:1px solid var(--line);padding:10px 0}details.bkd summary{
 .essay{width:100%;font:inherit;font-size:17px;line-height:1.5;padding:10px 12px;border-radius:12px;border:2px solid var(--line);outline:none;resize:vertical}
 .herans{background:var(--bg);border-radius:10px;padding:8px 10px;margin:6px 0;white-space:pre-wrap;font-weight:700}
 .dot.review{background:var(--amber);color:#3A2600}
+.bookpg{background:var(--bg);border-radius:14px;padding:8px 10px;margin:8px 0}
+.bookpg summary{font-weight:800;color:var(--purple);cursor:pointer}
+.pgs{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:70vh;overflow:auto;border-radius:10px}
+.pgs img{width:100%;border-radius:8px;cursor:zoom-in;background:#fff}
+.pgcard{position:sticky;top:6px;z-index:5;padding:10px 12px}
+.pgcard .pgs{max-height:42vh}
+.zoom{position:fixed;inset:0;background:rgba(20,16,32,.92);z-index:100;overflow:auto;-webkit-overflow-scrolling:touch}
+.zoom .zin img{display:block;width:200%;max-width:none;margin:0 0 10px}
+.zoom .zx{position:fixed;top:12px;right:12px;z-index:101}
+@media (min-width:1000px){ .zoom .zin img{width:140%} }
 .dot.help{background:var(--amber);color:#3A2600;box-shadow:0 2px 0 #C2830C}
 .qhead{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-weight:800;font-size:14px}
 .qtext{font-family:Fredoka;font-size:clamp(40px,10vw,64px);font-weight:600;text-align:center;margin:14px 0 6px;letter-spacing:.5px}
@@ -604,6 +614,26 @@ function vHelpBox(s){ return `<details class="howto"><summary>📘 How to: ${esc
 const alphaStrip=()=>`<div class="alpha">${ALPHA.split("").map((c,i)=>`<span><b>${c}</b><i>${i+1}</i></span>`).join("")}</div>`;
 function vSection(s,q){ let sec=""; for(const x of s.qs){ if(vX(x).sec)sec=vX(x).sec; if(x===q)break; } return sec; }
 
+/* ===== book pages (kept only on this device, in IndexedDB) ===== */
+let PAGES=null;
+function pagesDB(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open("tito-pages",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){rej(e)} }); }
+async function pagesLoad(){ try{ const db=await pagesDB(); PAGES=await new Promise(res=>{ const t=db.transaction("kv").objectStore("kv").get("pack"); t.onsuccess=()=>res(t.result||null); t.onerror=()=>res(null); }); }catch(e){ PAGES=null; } render(); }
+async function pagesSave(pack){ const db=await pagesDB(); await new Promise((res,rej)=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(pack,"pack"); t.oncomplete=res; t.onerror=()=>rej(t.error); }); PAGES=pack; }
+async function pagesImport(input){
+  const f=input.files&&input.files[0]; if(!f)return; toast("Loading pages…");
+  try{ const pack=JSON.parse(await f.text()); if(!pack.spreads||!pack.sheets) throw 0;
+    await pagesSave(pack); logEvent(`Book pages added on this device (${Object.keys(pack.spreads).length} pages)`); save(); toast(`📖 ${Object.keys(pack.spreads).length} book pages added`); render(); }
+  catch(e){ toast("That file isn't the page pack. Try again."); }
+}
+async function pagesClear(){ if(!twice("pg","Tap again to remove the book pages from this device"))return; const db=await pagesDB(); await new Promise(res=>{const t=db.transaction("kv","readwrite");t.objectStore("kv").delete("pack");t.oncomplete=res;}); PAGES=null; toast("Book pages removed"); render(); }
+function sheetPages(s){ return PAGES&&PAGES.sheets&&PAGES.sheets[s.id] ? PAGES.sheets[s.id].map(k=>PAGES.spreads[k]).filter(Boolean) : []; }
+function pagesPanel(s){ const P=sheetPages(s); if(!P.length) return "";
+  return `<details class="bookpg" ${view.pgOpen===false?"":"open"} ontoggle="view.pgOpen=this.open"><summary>📖 Book page${P.length>1?"s":""} <span class="lbl">tap a page to zoom</span></summary>
+    <div class="pgs">${P.map((u,i)=>`<img src="${u}" alt="Book page ${i+1}" onclick="pageZoom(${i})">`).join("")}</div></details>`; }
+function pageZoom(i){ const s=sheetById(view.sid), P=sheetPages(s); const o=document.createElement("div"); o.className="zoom";
+  o.innerHTML=`<button class="btn small zx" onclick="this.parentNode.remove()">✕ Close</button><div class="zin">${P.map(u=>`<img src="${u}">`).join("")}</div>`;
+  document.body.appendChild(o); const im=o.querySelectorAll(".zin img")[i]; if(im) setTimeout(()=>im.scrollIntoView(),50); }
+setTimeout(pagesLoad,0);
 function renderQV(){
   const s=sheetById(view.sid), q=s.qs[view.i], n=q[0], r=rec(s.id,n), st=r.status, last=r.tries[r.tries.length-1];
   if(view.selFor!==s.id+":"+n){ view.sel=r.draft!==undefined?JSON.parse(JSON.stringify(r.draft)):null; view.selFor=s.id+":"+n; }
@@ -623,7 +653,7 @@ function renderQV(){
   <div class="dots">${dots}</div>
   <div class="card">
     <div class="qhead"><span>${esc(s.short)} · ${esc(s.title)} · Q${n}</span><span>${view.i+1} of ${s.qs.length}</span></div>
-    <p class="vinstr">${esc(sec)}</p>${s.ref?`<p class="refnote">📖 ${esc(s.ref)}</p>`:""}
+    <p class="vinstr">${esc(sec)}</p>${sheetPages(s).length?pagesPanel(s):(s.ref?`<p class="refnote">📖 ${esc(s.ref)}</p>`:"")}
     ${(s.alpha||vX(q).alpha)?alphaStrip():""}
     <div id="vq-p-${n}" class="vq">${vAnswerHTML(s,q,locked?null:view.sel,"p",locked)}</div>
     ${locked?"":`<div class="row" style="justify-content:center;margin-top:14px"><button class="btn green" onclick="vCheck()">${isWrite(s,q)?"✍️ Hand in":"Check"}</button></div>`}
@@ -659,6 +689,7 @@ function renderTestV(){
   const c=s.qs.filter(q=>vFilled(s,q,t.answers[q[0]])).length;
   let lastSec=null;
   app.innerHTML=header(true)+`
+  ${sheetPages(s).length?`<div class="card pgcard">${pagesPanel(s)}</div>`:""}
   <div class="card"><h2>📝 ${esc(s.title)}</h2>
     ${s.test?"":vHelpBox(s)}
     <p class="sub" style="margin-top:10px">${esc(s.test?s.instr:s.instr)} Answer every question, then tap <b>Finish &amp; mark</b>.</p>
@@ -1175,6 +1206,12 @@ function renderParent(){
     ${F.map(({s,q})=>{ const r=store[s.id]?.[q[0]]; const last=r?.tries?.[r.tries.length-1];
       return `<div class="flagq"><b>${esc(s.short)} ${esc(s.title)} · Q${q[0]}</b><br><span class="lbl">${esc(qText(s,q))}</span><br>My answer: <b>${esc(qAns(s,q))}</b> · Tito: <b>${last?esc(last):"not answered yet"}</b>${r?.parentMarked?` · 👤 marked ${r.parentMarked}`:""}
       ${last?`<div class="pm"><button class="y" onclick="pMark('${s.id}',${q[0]},true)">✓ Tito is right</button><button class="n" onclick="pMark('${s.id}',${q[0]},false)">✗ Tito is wrong</button></div>`:""}</div>`; }).join("")}</div>`; })()}
+  <div class="card"><h3 style="margin-bottom:6px">📖 Book pages on this device</h3>
+    <p class="sub" style="margin-bottom:8px">Shows the English passages and Non-Verbal shapes next to the questions. The pages stay on this device only and never go on the website.</p>
+    ${PAGES?`<p style="font-weight:800;color:#0F6B46;margin:0 0 8px">✅ ${Object.keys(PAGES.spreads).length} book pages added</p>`:""}
+    <label class="btn ${PAGES?"ghost":""} small" style="display:inline-block;cursor:pointer">${PAGES?"Replace page pack":"📥 Add page pack file"}<input type="file" accept=".json,application/json" style="display:none" onchange="pagesImport(this)"></label>
+    ${PAGES?`<button class="link" style="color:var(--red)" onclick="pagesClear()">Remove pages</button>`:""}
+  </div>
   <div class="card"><h3 style="margin-bottom:6px">📕 Done in the book</h3>
     <p class="sub" style="margin-bottom:6px">Tick sheets Tito has already done in her paper book. She can't open them in the app, and the next sheet unlocks.</p>
     <label class="switch"><input type="checkbox" ${hideBook()?"checked":""} onchange="store.settings={...(store.settings||{}),hideBook:this.checked};save();render()"> Hide these sheets from her screen completely</label>
