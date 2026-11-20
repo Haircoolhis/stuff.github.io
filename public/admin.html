@@ -8,38 +8,61 @@
 <meta name="theme-color" content="#0d0f1f">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;600&display=swap">
 <style>
-:root{--bg:#0d0f1f;--bg2:#151a33;--fg:#e8e6f4;--muted:#9a9cc0;--accent:#b9a6ff;--ring:#3a3f6e;--bad:#f08a90;
+:root{--bg:#0d0f1f;--bg2:#151a33;--fg:#e8e6f4;--muted:#9a9cc0;--accent:#b9a6ff;--ring:#3a3f6e;--bad:#f08a90;--ok:#5fcfa6;
   --display:"Cormorant Garamond",Georgia,serif;--body:"Manrope",system-ui,-apple-system,sans-serif;color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{min-height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);
   padding:max(32px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(40px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-main{max-width:440px;margin:0 auto;display:grid;gap:20px;justify-items:center;text-align:center}
+main{max-width:440px;margin:0 auto;display:grid;gap:18px}
+.top{text-align:center}
 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
 h1{font-family:var(--display);font-weight:500;font-size:2.4rem;line-height:1;margin:6px 0 0}
 h1 em{color:var(--accent)}
-form,.panel{width:100%;display:grid;gap:12px}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600}
+form,.panel{display:grid;gap:12px}
+.card{display:grid;gap:12px;padding:16px;border:1px solid var(--ring);border-radius:16px;background:var(--bg2)}
 input[type=password]{font:inherit;font-size:16px;padding:12px 14px;border-radius:10px;border:1px solid var(--ring);background:var(--bg2);color:var(--fg);width:100%}
-button,.btn{font:inherit;font-size:15px;font-weight:600;border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:var(--bg);cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center}
+button{font:inherit;font-size:15px;font-weight:600;border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:var(--bg);cursor:pointer}
 .ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
-button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.err{color:var(--bad);font-size:14px;margin:0;min-height:1.2em}
-fieldset{border:0;margin:0;padding:0;display:grid;gap:8px;text-align:left}
-legend{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+.err{color:var(--bad);font-size:14px;margin:0;min-height:1.2em;text-align:center}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px;font-weight:600}
+.switch small{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:2px}
+.toggle{appearance:none;-webkit-appearance:none;flex:none;width:52px;height:32px;border-radius:99px;background:var(--ring);position:relative;cursor:pointer;margin:0}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--fg);transition:left .15s}
+.toggle:checked{background:var(--ok)}
+.toggle:checked::after{left:23px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px}
 label.song{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--ring);border-radius:12px;font-size:16px;cursor:pointer}
 label.song input{width:22px;height:22px;margin:0;accent-color:var(--accent)}
-.status{font-size:14px;color:var(--muted);margin:0;min-height:1.2em}
+.status{font-size:14px;color:var(--muted);margin:0;min-height:1.2em;text-align:center}
+.now{text-align:center;margin:0}
+.now b{display:block;font-family:var(--display);font-weight:500;font-size:1.7rem}
+.now span{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ctl{display:flex;justify-content:center;align-items:center;gap:14px}
+.ctl button{width:56px;height:56px;border-radius:50%;padding:0;display:grid;place-items:center;background:transparent;border:1px solid var(--ring)}
+.ctl button svg{width:22px;height:22px;fill:var(--fg)}
+.ctl #gplay{width:72px;height:72px;background:var(--accent);border:0}
+.ctl #gplay svg{fill:var(--bg);width:28px;height:28px}
+.jump{display:grid;gap:6px}
+.jump button{background:transparent;color:var(--fg);border:1px solid var(--ring);text-align:left;font-weight:500}
+.jump button[aria-current="true"]{border-color:var(--accent);color:var(--accent)}
+.hear{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);justify-content:center}
+.hear input{width:20px;height:20px;accent-color:var(--accent);margin:0}
 #qr{background:#fff;padding:14px;border-radius:12px;line-height:0;justify-self:center}
-#qr img,#qr canvas{width:220px;height:220px;max-width:100%}
-.link{font-size:14px;word-break:break-all;margin:0;user-select:all;-webkit-user-select:all}
+#qr img,#qr canvas{width:200px;height:200px;max-width:100%}
+.link{font-size:14px;word-break:break-all;margin:0;user-select:all;-webkit-user-select:all;text-align:center}
 .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .note{font-size:13px;line-height:1.55;color:var(--muted);margin:0}
-.out{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px}
+.out{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px;justify-self:center}
 </style>
 </head>
 <body>
 <main>
-  <div><p class="eyebrow">Admin</p><h1>Share <em>songs</em></h1></div>
+  <div class="top"><p class="eyebrow">Admin</p><h1>Share <em>songs</em></h1></div>
 
   <form id="login">
     <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" aria-label="Admin password" required>
@@ -48,56 +71,119 @@ label.song input{width:22px;height:22px;margin:0;accent-color:var(--accent)}
   </form>
 
   <div class="panel" id="panel" hidden>
-    <fieldset id="pick"><legend>Songs people can hear right now</legend></fieldset>
+    <section class="card">
+      <label class="switch" for="sharing"><span>Sharing<small id="sharingNote">Listeners can hear your songs.</small></span><input class="toggle" type="checkbox" id="sharing"></label>
+    </section>
+
+    <section class="card">
+      <h2>Songs people can hear</h2>
+      <fieldset id="pick"></fieldset>
+    </section>
+
+    <section class="card">
+      <label class="switch" for="groupOn"><span>Group listen<small>Everyone hears the same song at the same moment. You control it.</small></span><input class="toggle" type="checkbox" id="groupOn"></label>
+      <div id="groupBox" hidden>
+        <div style="display:grid;gap:14px">
+          <p class="now"><b id="gname">Nothing playing</b><span id="gtime">0:00</span></p>
+          <div class="ctl">
+            <button type="button" id="gprev" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zM9.5 12L18 18V6z"/></svg></button>
+            <button type="button" id="gplay" aria-label="Play for everyone"><svg viewBox="0 0 24 24" aria-hidden="true" id="gicon"><path d="M8 5v14l11-7z"/></svg></button>
+            <button type="button" id="gnext" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+          </div>
+          <div class="jump" id="jump"></div>
+          <label class="hear" for="hear"><input type="checkbox" id="hear" checked>Play it on this phone too</label>
+        </div>
+      </div>
+    </section>
+
     <p class="status" id="status" role="status"></p>
-    <div id="qr" role="img" aria-label="QR code for the listening page"></div>
-    <p class="link" id="link"></p>
-    <div class="btns">
-      <button type="button" id="share">Share / AirDrop</button>
-      <button type="button" class="ghost" id="copy">Copy link</button>
-    </div>
-    <p class="note">One link and one QR code, forever. Changes you make here reach everyone listening within a few seconds, with or without an account.</p>
+
+    <section class="card">
+      <h2>Share the link</h2>
+      <div id="qr" role="img" aria-label="QR code for the listening page"></div>
+      <p class="link" id="link"></p>
+      <div class="btns"><button type="button" id="share">Share / AirDrop</button><button type="button" class="ghost" id="copy">Copy link</button></div>
+      <p class="note">One link and one QR code, forever. Every change here reaches listeners within a few seconds.</p>
+    </section>
     <button type="button" class="out" id="logout">Lock this device</button>
   </div>
+  <audio id="a" preload="auto"></audio>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const ALL=[{id:'done',name:'It Is Done'},{id:'dupe',name:'Mo Dúpẹ́'},{id:'dupe2',name:'Mo Dúpẹ́ II'}];
+const ALL=[{id:'done',name:'It Is Done',src:'/songs/it-is-done.mp3'},{id:'dupe',name:'Mo Dúpẹ́',src:'/songs/mo-dupe.mp3'},{id:'dupe2',name:'Mo Dúpẹ́ II',src:'/songs/mo-dupe-2.mp3'}];
 const LINK=location.origin+'/';
 const $=id=>document.getElementById(id);
+const a=$('a');
+const fmt=s=>Math.floor(Math.max(0,s)/60)+':'+String(Math.floor(Math.max(0,s)%60)).padStart(2,'0');
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-let key=store.get('adminKey')||'',busy=false;
+let key=store.get('adminKey')||'',S=null,offset=0,curId=null,es=null;
 
-ALL.forEach(s=>{const l=document.createElement('label');l.className='song';const c=document.createElement('input');c.type='checkbox';c.id='pick-'+s.id;
-  c.addEventListener('change',save);l.append(c,document.createTextNode(s.name));$('pick').appendChild(l)});
+ALL.forEach(s=>{
+  const l=document.createElement('label');l.className='song';const c=document.createElement('input');c.type='checkbox';c.id='pick-'+s.id;
+  c.addEventListener('change',()=>post('/api/state',{songs:ALL.map(x=>x.id).filter(id=>$('pick-'+id).checked)}));
+  l.append(c,document.createTextNode(s.name));$('pick').appendChild(l);
+  const j=document.createElement('button');j.type='button';j.id='jump-'+s.id;j.textContent=s.name;
+  j.addEventListener('click',()=>{unlockAudio();post('/api/control',{action:'jump',songId:s.id})});$('jump').appendChild(j);
+});
+$('sharing').addEventListener('change',e=>post('/api/state',{sharing:e.target.checked}));
+$('groupOn').addEventListener('change',e=>{unlockAudio();post('/api/state',{group:e.target.checked})});
+$('gplay').addEventListener('click',()=>{unlockAudio();post('/api/control',{action:S&&!S.group.paused?'pause':'play'})});
+$('gnext').addEventListener('click',()=>{unlockAudio();post('/api/control',{action:'next'})});
+$('gprev').addEventListener('click',()=>{unlockAudio();post('/api/control',{action:'prev'})});
+$('hear').addEventListener('change',()=>{store.set('hear',$('hear').checked?'1':'0');if($('hear').checked){unlockAudio();sync()}else a.pause()});
+if(store.get('hear')==='0')$('hear').checked=false;
+
+// A tap on any control lets this phone play sound from then on.
+function unlockAudio(){if($('hear').checked&&a.paused&&S&&S.group.on&&!S.group.paused)sync()}
+
+function post(url,body){
+  $('status').textContent='Saving…';
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':key},body:JSON.stringify(body)})
+    .then(r=>{if(r.status===401){lock('Your password changed. Unlock again.');throw 0}if(!r.ok)throw 0;return r.json()})
+    .then(st=>{apply(st);$('status').textContent='Saved. Listeners are updated.';setTimeout(()=>{if($('status').textContent.startsWith('Saved'))$('status').textContent=''},2500)})
+    .catch(e=>{if(e!==0)$('status').textContent='That change didn’t save. Check your connection and try again.';if(S)apply(S)});
+}
+const target=()=>{const g=S.group;return g.paused?g.pausePos:(Date.now()+offset-g.startedAt)/1000};
+
+function apply(st){
+  if(!st||!Array.isArray(st.songs))return;S=st;offset=(st.serverNow||Date.now())-Date.now();
+  $('sharing').checked=st.sharing;$('sharingNote').textContent=st.sharing?'Listeners can hear your songs.':'Off: listeners see “Sharing is turned off” and nothing plays.';
+  ALL.forEach(s=>{$('pick-'+s.id).checked=st.songs.includes(s.id);const j=$('jump-'+s.id);j.hidden=!st.songs.includes(s.id);j.setAttribute('aria-current',st.group.songId===s.id?'true':'false')});
+  $('groupOn').checked=st.group.on;$('groupBox').hidden=!st.group.on;
+  const cur=ALL.find(s=>s.id===st.group.songId);
+  $('gname').textContent=cur?cur.name:'Nothing playing';
+  $('gicon').innerHTML=st.group.paused?'<path d="M8 5v14l11-7z"/>':'<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
+  $('gplay').setAttribute('aria-label',st.group.paused?'Play for everyone':'Pause for everyone');
+  ['gplay','gnext','gprev'].forEach(id=>$(id).disabled=!st.sharing||!st.songs.length);
+  sync();
+}
+function sync(){
+  if(!S||!S.group.on||!S.sharing||!S.group.songId||!$('hear').checked){a.pause();return}
+  const s=ALL.find(x=>x.id===S.group.songId);
+  if(curId!==s.id){curId=s.id;a.src=s.src+'?k='+encodeURIComponent(key)}
+  const seek=()=>{const t=target();if(Math.abs(a.currentTime-t)>1)try{a.currentTime=t}catch(e){}};
+  if(a.readyState>=1)seek();else a.addEventListener('loadedmetadata',seek,{once:true});
+  if(S.group.paused)a.pause();else a.play().catch(()=>{});
+}
+setInterval(()=>{if(!S||!S.group.on)return;$('gtime').textContent=fmt(target());
+  if(!S.group.paused&&!a.paused){const t=target();if(Math.abs(a.currentTime-t)>1.5)try{a.currentTime=t}catch(e){}}},1000);
 
 function check(k){return fetch('/api/check',{method:'POST',headers:{'x-admin-key':k}}).then(r=>r.ok)}
-function unlock(){$('login').hidden=true;$('panel').hidden=false;
-  $('link').textContent=LINK;
-  if(window.QRCode&&!$('qr').firstChild)new QRCode($('qr'),{text:LINK,width:440,height:440,colorDark:'#1b1a2e',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
-  fetch('/api/songs',{cache:'no-store'}).then(r=>r.json()).then(st=>{ALL.forEach(s=>$('pick-'+s.id).checked=st.songs.includes(s.id));summary(st.songs)}).catch(()=>{$('status').textContent='Couldn’t load the current songs. Refresh to try again.'})}
-function summary(songs){$('status').textContent='Live: listeners hear '+(songs.length?songs.length+(songs.length===1?' song.':' songs.'):'no songs.')}
-function save(){
-  if(busy)return;busy=true;$('status').textContent='Saving…';
-  const songs=ALL.map(s=>s.id).filter(id=>$('pick-'+id).checked);
-  fetch('/api/songs',{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':key},body:JSON.stringify({songs})})
-    .then(r=>{if(r.status===401){lock('Your password changed. Unlock again.');throw 0}if(!r.ok)throw 0;return r.json()})
-    .then(st=>summary(st.songs))
-    .catch(e=>{if(e!==0)$('status').textContent='That change didn’t save. Check your connection and tick again.'})
-    .then(()=>{busy=false});
-}
-function lock(msg){store.del('adminKey');key='';$('panel').hidden=true;$('login').hidden=false;$('err').textContent=msg||''}
+function unlock(){$('login').hidden=true;$('panel').hidden=false;$('link').textContent=LINK;
+  if(window.QRCode&&!$('qr').firstChild)new QRCode($('qr'),{text:LINK,width:400,height:400,colorDark:'#1b1a2e',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  fetch('/api/state',{cache:'no-store'}).then(r=>r.json()).then(apply).catch(()=>{$('status').textContent='Couldn’t load the current settings. Refresh to try again.'});
+  if(!es&&'EventSource' in window){es=new EventSource('/api/stream');es.onmessage=e=>{try{apply(JSON.parse(e.data))}catch(err){}}}}
+function lock(msg){store.del('adminKey');key='';a.pause();$('panel').hidden=true;$('login').hidden=false;$('err').textContent=msg||''}
 $('login').addEventListener('submit',e=>{e.preventDefault();const k=$('pw').value;$('err').textContent='Checking…';
   check(k).then(ok=>{if(ok){key=k;store.set('adminKey',k);$('err').textContent='';unlock()}else $('err').textContent='That password isn’t right.'}).catch(()=>{$('err').textContent='Couldn’t reach the server. Try again.'})});
 $('logout').addEventListener('click',()=>lock());
-$('share').addEventListener('click',()=>{
-  if(navigator.share)navigator.share({title:'Shared songs',text:'Listen to my songs',url:LINK}).catch(()=>{});
-  else copy();
-});
+$('share').addEventListener('click',()=>{if(navigator.share)navigator.share({title:'Shared songs',text:'Listen to my songs',url:LINK}).catch(()=>{});else copy()});
 function copy(){const b=$('copy');
   const sel=()=>{const r=document.createRange();r.selectNodeContents($('link'));const g=getSelection();g.removeAllRanges();g.addRange(r);b.textContent='Link selected'};
   try{navigator.clipboard.writeText(LINK).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy link',1800)},sel)}catch(e){sel()}}
 $('copy').addEventListener('click',copy);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&key)fetch('/api/state',{cache:'no-store'}).then(r=>r.json()).then(apply).catch(()=>{})});
 if(key)check(key).then(ok=>ok?unlock():lock()).catch(()=>{});
 </script>
 </body>

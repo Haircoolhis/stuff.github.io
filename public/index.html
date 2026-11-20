@@ -6,25 +6,29 @@
 <title>Shared Songs</title>
 <meta name="description" content="Songs shared with you.">
 <meta name="theme-color" content="#0d0f1f">
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;600&display=swap">
 <style>
 :root{--bg:#0d0f1f;--bg2:#151a33;--fg:#e8e6f4;--muted:#9a9cc0;--accent:#b9a6ff;--ring:#3a3f6e;
   --display:"Cormorant Garamond",Georgia,serif;--body:"Manrope",system-ui,-apple-system,sans-serif;color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{min-height:100%;margin:0}
 body{background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%);background-color:var(--bg);color:var(--fg);font-family:var(--body);
   padding:max(36px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(36px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-main{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+main{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
 header{text-align:center}
 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
 h1{font-family:var(--display);font-weight:500;font-size:clamp(2.2rem,10vw,3rem);line-height:1;margin:8px 0 10px}
 h1 em{color:var(--accent)}
 .sub{color:var(--muted);margin:0;font-size:15px;line-height:1.5}
+.live{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:99px;padding:6px 12px;margin:0 auto}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 .list{display:grid;gap:10px}
 .song{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border:1px solid var(--ring);border-radius:14px;background:transparent;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
-.song:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.song[aria-pressed="true"]{border-color:var(--accent);background:var(--bg2)}
+.song:disabled{cursor:default;opacity:.55}
+.song:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.song[aria-pressed="true"]{border-color:var(--accent);background:var(--bg2);opacity:1}
 .pb{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--ring);display:grid;place-items:center}
 .song[aria-pressed="true"] .pb{background:var(--accent);border-color:var(--accent)}
 .pb svg{width:18px;height:18px;fill:var(--fg)}
@@ -33,11 +37,12 @@ h1 em{color:var(--accent)}
 .n{display:block;font-size:16px;font-weight:600}
 .s{display:block;font-size:13px;color:var(--muted);margin-top:2px}
 .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.empty{text-align:center;color:var(--muted);padding:24px 12px;border:1px dashed var(--ring);border-radius:14px;margin:0}
+.empty{text-align:center;color:var(--muted);padding:28px 12px;border:1px dashed var(--ring);border-radius:14px;margin:0;line-height:1.5}
 .progress{height:4px;border-radius:2px;background:var(--ring);overflow:hidden}
 .progress i{display:block;height:100%;width:0;background:var(--accent)}
 .foot{text-align:center;font-size:13px;color:var(--muted);margin:0}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.tap{font:inherit;font-size:16px;font-weight:600;border:0;border-radius:12px;padding:14px 18px;background:var(--accent);color:var(--bg);cursor:pointer;width:100%}
+@media (prefers-reduced-motion:reduce){.live i{animation:none;opacity:1}}
 </style>
 </head>
 <body>
@@ -47,10 +52,12 @@ h1 em{color:var(--accent)}
     <h1>Shared <em>songs</em></h1>
     <p class="sub" id="sub">Tap a song to play.</p>
   </header>
+  <p class="live" id="live" hidden><i></i>Listening together</p>
+  <button class="tap" id="tap" type="button" hidden>Tap to listen along</button>
   <div class="list" id="list"><p class="empty">Loading songs…</p></div>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
-  <p class="foot">Songs play one after another.</p>
-  <audio id="a" preload="none"></audio>
+  <p class="foot" id="foot">Songs play one after another.</p>
+  <audio id="a" preload="auto"></audio>
 </main>
 <script>
 const ALL=[
@@ -58,38 +65,67 @@ const ALL=[
   {id:'dupe',name:'Mo Dúpẹ́',sub:'Worship',src:'/songs/mo-dupe.mp3',dur:320},
   {id:'dupe2',name:'Mo Dúpẹ́ II',sub:'Worship, second take',src:'/songs/mo-dupe-2.mp3',dur:354}
 ];
-const list=document.getElementById('list'),a=document.getElementById('a'),bar=document.getElementById('bar'),sub=document.getElementById('sub');
+const $=id=>document.getElementById(id);
+const list=$('list'),a=$('a'),bar=$('bar');
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 const PLAY='<path d="M8 5v14l11-7z"/>',PAUSE='<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
-let chosen=null,SONGS=[],curId=null,lastKey='';
+let S=null,offset=0,SONGS=[],curId=null,listKey='';
+
+const group=()=>!!(S&&S.sharing&&S.group.on);
+function target(){const g=S.group;return g.paused?g.pausePos:(Date.now()+offset-g.startedAt)/1000}
 
 function render(){
-  SONGS=ALL.filter(s=>chosen.includes(s.id));
-  list.innerHTML='';
-  if(!SONGS.length){const p=document.createElement('p');p.className='empty';p.textContent='No songs are shared right now. Check back soon.';list.appendChild(p)}
-  sub.textContent=SONGS.length===1?'Tap the song to play.':'Tap a song to play.';
-  SONGS.forEach(s=>{
-    const b=document.createElement('button');b.type='button';b.className='song';b.id='song-'+s.id;
-    b.innerHTML='<span class="pb"><svg viewBox="0 0 24 24" aria-hidden="true">'+PLAY+'</svg></span><span class="t"><span class="n"></span><span class="s"></span></span><span class="d"></span>';
-    b.querySelector('.n').textContent=s.name;b.querySelector('.s').textContent=s.sub;b.querySelector('.d').textContent=fmt(s.dur);
-    b.addEventListener('click',()=>{if(s.id===curId){a.paused?a.play().catch(()=>{}):a.pause()}else play(s.id)});
-    list.appendChild(b);
-  });
-  if(curId&&!chosen.includes(curId)){const was=!a.paused;a.pause();curId=null;bar.style.width='0';if(was&&SONGS.length)play(SONGS[0].id)}
+  const key=[S.sharing,S.group.on,S.songs.join(',')].join('|');
+  if(key!==listKey){listKey=key;
+    SONGS=S.sharing?ALL.filter(s=>S.songs.includes(s.id)):[];
+    list.innerHTML='';
+    if(!S.sharing){const p=document.createElement('p');p.className='empty';p.textContent='Sharing is turned off right now. Check back later.';list.appendChild(p)}
+    else if(!SONGS.length){const p=document.createElement('p');p.className='empty';p.textContent='No songs are shared right now. Check back soon.';list.appendChild(p)}
+    SONGS.forEach(s=>{
+      const b=document.createElement('button');b.type='button';b.className='song';b.id='song-'+s.id;
+      b.innerHTML='<span class="pb"><svg viewBox="0 0 24 24" aria-hidden="true">'+PLAY+'</svg></span><span class="t"><span class="n"></span><span class="s"></span></span><span class="d"></span>';
+      b.querySelector('.n').textContent=s.name;b.querySelector('.s').textContent=s.sub;b.querySelector('.d').textContent=fmt(s.dur);
+      b.addEventListener('click',()=>{if(group())return;if(s.id===curId){a.paused?a.play().catch(()=>{}):a.pause()}else play(s.id)});
+      list.appendChild(b);
+    });
+  }
+  $('live').hidden=!group();
+  $('sub').textContent=!S.sharing?'':group()?'Everyone hears the same song at the same moment.':(SONGS.length===1?'Tap the song to play.':'Tap a song to play.');
+  $('foot').hidden=!S.sharing||!SONGS.length||group();
+  [...list.querySelectorAll('.song')].forEach(b=>b.disabled=group());
+  if(!S.sharing){a.pause();curId=null;bar.style.width='0';$('tap').hidden=true}
+  else if(group())syncGroup();
+  else{$('tap').hidden=true;if(curId&&!S.songs.includes(curId)){const was=!a.paused;a.pause();curId=null;bar.style.width='0';if(was&&SONGS.length)play(SONGS[0].id)}}
   paint();
 }
-function apply(st){if(!st||!Array.isArray(st.songs))return;const key=st.songs.join(',');if(key===lastKey&&chosen)return;lastKey=key;chosen=st.songs;render()}
-function play(id){curId=id;const s=ALL.find(x=>x.id===id);a.src=s.src;a.play().catch(()=>{});paint();
-  if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:s.name,artist:'Shared songs'})}
-function nextId(){if(!SONGS.length)return null;const i=SONGS.findIndex(s=>s.id===curId);return SONGS[(i+1)%SONGS.length].id}
-function paint(){SONGS.forEach(s=>{const b=document.getElementById('song-'+s.id);if(!b)return;const on=s.id===curId;b.setAttribute('aria-pressed',on?'true':'false');b.querySelector('svg').innerHTML=on&&!a.paused?PAUSE:PLAY})}
-a.addEventListener('play',paint);a.addEventListener('pause',paint);
-a.addEventListener('ended',()=>{const n=nextId();if(n)play(n)});
-a.addEventListener('timeupdate',()=>{bar.style.width=a.duration?(a.currentTime/a.duration*100)+'%':'0'});
-if('mediaSession' in navigator){try{navigator.mediaSession.setActionHandler('nexttrack',()=>{const n=nextId();if(n)play(n)})}catch(e){}}
 
-// Live list: server push, with a slow poll as a safety net.
-function load(){fetch('/api/songs',{cache:'no-store'}).then(r=>r.json()).then(apply).catch(()=>{if(!chosen){chosen=ALL.map(s=>s.id);render()}})}
+// Solo listening
+function play(id){curId=id;const s=ALL.find(x=>x.id===id);a.src=s.src;a.play().catch(()=>{});paint();meta(s)}
+function nextId(){if(!SONGS.length)return null;const i=SONGS.findIndex(s=>s.id===curId);return SONGS[(i+1)%SONGS.length].id}
+a.addEventListener('ended',()=>{if(group())return;const n=nextId();if(n)play(n)});
+
+// Group listening: follow the server's clock.
+function syncGroup(){
+  const g=S.group;
+  if(!g.songId){a.pause();curId=null;$('tap').hidden=true;return}
+  const s=ALL.find(x=>x.id===g.songId);
+  if(curId!==g.songId){curId=g.songId;a.src=s.src;meta(s)}
+  const seek=()=>{const t=target();if(Math.abs(a.currentTime-t)>1)try{a.currentTime=t}catch(e){}};
+  if(a.readyState>=1)seek();else a.addEventListener('loadedmetadata',seek,{once:true});
+  if(g.paused){a.pause();$('tap').hidden=true}
+  else a.play().then(()=>{$('tap').hidden=true}).catch(()=>{$('tap').hidden=false});
+}
+$('tap').addEventListener('click',()=>{if(group())syncGroup()});
+setInterval(()=>{if(group()&&!S.group.paused&&!a.paused){const t=target();if(Math.abs(a.currentTime-t)>1.5)try{a.currentTime=t}catch(e){}}},4000);
+
+function paint(){[...list.querySelectorAll('.song')].forEach(b=>{const on=b.id==='song-'+curId;b.setAttribute('aria-pressed',on?'true':'false');b.querySelector('svg').innerHTML=on&&!a.paused?PAUSE:PLAY})}
+function meta(s){if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:s.name,artist:'Shared songs'})}
+a.addEventListener('play',paint);a.addEventListener('pause',paint);
+a.addEventListener('timeupdate',()=>{bar.style.width=a.duration?(a.currentTime/a.duration*100)+'%':'0'});
+if('mediaSession' in navigator){try{navigator.mediaSession.setActionHandler('nexttrack',()=>{if(!group()){const n=nextId();if(n)play(n)}})}catch(e){}}
+
+function apply(st){if(!st||!Array.isArray(st.songs))return;S=st;offset=(st.serverNow||Date.now())-Date.now();render()}
+function load(){fetch('/api/state',{cache:'no-store'}).then(r=>r.json()).then(apply).catch(()=>{if(!S){list.innerHTML='<p class="empty">Couldn’t load the songs. Check your connection and refresh.</p>'}})}
 load();
 if('EventSource' in window){const es=new EventSource('/api/stream');es.onmessage=e=>{try{apply(JSON.parse(e.data))}catch(err){}}}
 setInterval(load,30000);
