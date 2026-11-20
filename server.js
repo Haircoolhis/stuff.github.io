@@ -10,7 +10,7 @@ const ADMIN = process.env.ADMIN_PASSWORD || '';
 const PUBLIC = path.join(__dirname, 'public');
 const DATA = path.join(__dirname, 'data.json');
 // Song lengths in seconds, so the server can run the group-listen clock by itself.
-const DUR = { done: 156.72, dupe: 319.58, dupe2: 353.9 };
+const DUR = { done: 156.72, dupe: 319.58, dupe2: 353.9, daalu: 307.63, belong: 163.58, carry: 180.98, skies: 202.87, bloom: 177.12, selfish: 182.04, fire: 174.24 };
 const SONG_IDS = Object.keys(DUR);
 
 let state = {
