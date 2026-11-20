@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Share Songs · Admin</title>
+<meta name="theme-color" content="#0d0f1f">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;600&display=swap">
+<style>
+:root{--bg:#0d0f1f;--bg2:#151a33;--fg:#e8e6f4;--muted:#9a9cc0;--accent:#b9a6ff;--ring:#3a3f6e;--bad:#f08a90;
+  --display:"Cormorant Garamond",Georgia,serif;--body:"Manrope",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);
+  padding:max(32px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(40px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+main{max-width:440px;margin:0 auto;display:grid;gap:20px;justify-items:center;text-align:center}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--display);font-weight:500;font-size:2.4rem;line-height:1;margin:6px 0 0}
+h1 em{color:var(--accent)}
+form,.panel{width:100%;display:grid;gap:12px}
+input[type=password]{font:inherit;font-size:16px;padding:12px 14px;border-radius:10px;border:1px solid var(--ring);background:var(--bg2);color:var(--fg);width:100%}
+button,.btn{font:inherit;font-size:15px;font-weight:600;border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:var(--bg);cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center}
+.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.err{color:var(--bad);font-size:14px;margin:0;min-height:1.2em}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px;text-align:left}
+legend{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0}
+label.song{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--ring);border-radius:12px;font-size:16px;cursor:pointer}
+label.song input{width:22px;height:22px;margin:0;accent-color:var(--accent)}
+.status{font-size:14px;color:var(--muted);margin:0;min-height:1.2em}
+#qr{background:#fff;padding:14px;border-radius:12px;line-height:0;justify-self:center}
+#qr img,#qr canvas{width:220px;height:220px;max-width:100%}
+.link{font-size:14px;word-break:break-all;margin:0;user-select:all;-webkit-user-select:all}
+.btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.note{font-size:13px;line-height:1.55;color:var(--muted);margin:0}
+.out{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px}
+</style>
+</head>
+<body>
+<main>
+  <div><p class="eyebrow">Admin</p><h1>Share <em>songs</em></h1></div>
+
+  <form id="login">
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" aria-label="Admin password" required>
+    <button type="submit">Unlock</button>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+
+  <div class="panel" id="panel" hidden>
+    <fieldset id="pick"><legend>Songs people can hear right now</legend></fieldset>
+    <p class="status" id="status" role="status"></p>
+    <div id="qr" role="img" aria-label="QR code for the listening page"></div>
+    <p class="link" id="link"></p>
+    <div class="btns">
+      <button type="button" id="share">Share / AirDrop</button>
+      <button type="button" class="ghost" id="copy">Copy link</button>
+    </div>
+    <p class="note">One link and one QR code, forever. Changes you make here reach everyone listening within a few seconds, with or without an account.</p>
+    <button type="button" class="out" id="logout">Lock this device</button>
+  </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const ALL=[{id:'done',name:'It Is Done'},{id:'dupe',name:'Mo Dúpẹ́'},{id:'dupe2',name:'Mo Dúpẹ́ II'}];
+const LINK=location.origin+'/';
+const $=id=>document.getElementById(id);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+let key=store.get('adminKey')||'',busy=false;
+
+ALL.forEach(s=>{const l=document.createElement('label');l.className='song';const c=document.createElement('input');c.type='checkbox';c.id='pick-'+s.id;
+  c.addEventListener('change',save);l.append(c,document.createTextNode(s.name));$('pick').appendChild(l)});
+
+function check(k){return fetch('/api/check',{method:'POST',headers:{'x-admin-key':k}}).then(r=>r.ok)}
+function unlock(){$('login').hidden=true;$('panel').hidden=false;
+  $('link').textContent=LINK;
+  if(window.QRCode&&!$('qr').firstChild)new QRCode($('qr'),{text:LINK,width:440,height:440,colorDark:'#1b1a2e',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  fetch('/api/songs',{cache:'no-store'}).then(r=>r.json()).then(st=>{ALL.forEach(s=>$('pick-'+s.id).checked=st.songs.includes(s.id));summary(st.songs)}).catch(()=>{$('status').textContent='Couldn’t load the current songs. Refresh to try again.'})}
+function summary(songs){$('status').textContent='Live: listeners hear '+(songs.length?songs.length+(songs.length===1?' song.':' songs.'):'no songs.')}
+function save(){
+  if(busy)return;busy=true;$('status').textContent='Saving…';
+  const songs=ALL.map(s=>s.id).filter(id=>$('pick-'+id).checked);
+  fetch('/api/songs',{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':key},body:JSON.stringify({songs})})
+    .then(r=>{if(r.status===401){lock('Your password changed. Unlock again.');throw 0}if(!r.ok)throw 0;return r.json()})
+    .then(st=>summary(st.songs))
+    .catch(e=>{if(e!==0)$('status').textContent='That change didn’t save. Check your connection and tick again.'})
+    .then(()=>{busy=false});
+}
+function lock(msg){store.del('adminKey');key='';$('panel').hidden=true;$('login').hidden=false;$('err').textContent=msg||''}
+$('login').addEventListener('submit',e=>{e.preventDefault();const k=$('pw').value;$('err').textContent='Checking…';
+  check(k).then(ok=>{if(ok){key=k;store.set('adminKey',k);$('err').textContent='';unlock()}else $('err').textContent='That password isn’t right.'}).catch(()=>{$('err').textContent='Couldn’t reach the server. Try again.'})});
+$('logout').addEventListener('click',()=>lock());
+$('share').addEventListener('click',()=>{
+  if(navigator.share)navigator.share({title:'It Is Done',text:'Listen to my songs',url:LINK}).catch(()=>{});
+  else copy();
+});
+function copy(){const b=$('copy');
+  const sel=()=>{const r=document.createRange();r.selectNodeContents($('link'));const g=getSelection();g.removeAllRanges();g.addRange(r);b.textContent='Link selected'};
+  try{navigator.clipboard.writeText(LINK).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy link',1800)},sel)}catch(e){sel()}}
+$('copy').addEventListener('click',copy);
+if(key)check(key).then(ok=>ok?unlock():lock()).catch(()=>{});
+</script>
+</body>
+</html>
