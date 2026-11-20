@@ -91,7 +91,7 @@ $('login').addEventListener('submit',e=>{e.preventDefault();const k=$('pw').valu
   check(k).then(ok=>{if(ok){key=k;store.set('adminKey',k);$('err').textContent='';unlock()}else $('err').textContent='That password isn’t right.'}).catch(()=>{$('err').textContent='Couldn’t reach the server. Try again.'})});
 $('logout').addEventListener('click',()=>lock());
 $('share').addEventListener('click',()=>{
-  if(navigator.share)navigator.share({title:'It Is Done',text:'Listen to my songs',url:LINK}).catch(()=>{});
+  if(navigator.share)navigator.share({title:'Shared songs',text:'Listen to my songs',url:LINK}).catch(()=>{});
   else copy();
 });
 function copy(){const b=$('copy');

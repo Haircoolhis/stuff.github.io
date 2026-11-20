@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>It Is Done Sessions</title>
-<meta name="description" content="Songs of gratitude and new beginnings.">
+<title>Shared Songs</title>
+<meta name="description" content="Songs shared with you.">
 <meta name="theme-color" content="#0d0f1f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;600&display=swap">
@@ -44,8 +44,8 @@ h1 em{color:var(--accent)}
 <main>
   <header>
     <p class="eyebrow">Shared with you</p>
-    <h1>It Is <em>Done</em></h1>
-    <p class="sub" id="sub">Songs of gratitude and new beginnings. Tap a song to play.</p>
+    <h1>Shared <em>songs</em></h1>
+    <p class="sub" id="sub">Tap a song to play.</p>
   </header>
   <div class="list" id="list"><p class="empty">Loading songs…</p></div>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
@@ -67,7 +67,7 @@ function render(){
   SONGS=ALL.filter(s=>chosen.includes(s.id));
   list.innerHTML='';
   if(!SONGS.length){const p=document.createElement('p');p.className='empty';p.textContent='No songs are shared right now. Check back soon.';list.appendChild(p)}
-  sub.textContent=SONGS.length===1?'A song of gratitude and new beginnings. Tap to play.':'Songs of gratitude and new beginnings. Tap a song to play.';
+  sub.textContent=SONGS.length===1?'Tap the song to play.':'Tap a song to play.';
   SONGS.forEach(s=>{
     const b=document.createElement('button');b.type='button';b.className='song';b.id='song-'+s.id;
     b.innerHTML='<span class="pb"><svg viewBox="0 0 24 24" aria-hidden="true">'+PLAY+'</svg></span><span class="t"><span class="n"></span><span class="s"></span></span><span class="d"></span>';
@@ -80,7 +80,7 @@ function render(){
 }
 function apply(st){if(!st||!Array.isArray(st.songs))return;const key=st.songs.join(',');if(key===lastKey&&chosen)return;lastKey=key;chosen=st.songs;render()}
 function play(id){curId=id;const s=ALL.find(x=>x.id===id);a.src=s.src;a.play().catch(()=>{});paint();
-  if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:s.name,artist:'It Is Done'})}
+  if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:s.name,artist:'Shared songs'})}
 function nextId(){if(!SONGS.length)return null;const i=SONGS.findIndex(s=>s.id===curId);return SONGS[(i+1)%SONGS.length].id}
 function paint(){SONGS.forEach(s=>{const b=document.getElementById('song-'+s.id);if(!b)return;const on=s.id===curId;b.setAttribute('aria-pressed',on?'true':'false');b.querySelector('svg').innerHTML=on&&!a.paused?PAUSE:PLAY})}
 a.addEventListener('play',paint);a.addEventListener('pause',paint);
