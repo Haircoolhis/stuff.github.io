@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 10000;
 const FAMILY_CODE = process.env.FAMILY_CODE || "";
 const ORIGINS = (process.env.ALLOWED_ORIGINS || "https://titos-maths.onrender.com").split(",").map(s => s.trim());
 const DB_URL = process.env.DATABASE_URL || "";
+const STATUS_KEY = process.env.STATUS_KEY || "";
 const MAX_BODY = 512 * 1024;
 
 let pool = null, ready = false, lastError = "";
@@ -19,6 +20,12 @@ if (DB_URL) {
     .catch(e => { lastError = e.message; console.error("Database setup failed:", e.message); });
 }
 
+function keyOk(given, want) {
+  if (!want || !given) return false;
+  const a = crypto.createHash("sha256").update(String(given)).digest();
+  const b = crypto.createHash("sha256").update(want).digest();
+  return crypto.timingSafeEqual(a, b);
+}
 function codeOk(given) {
   if (!FAMILY_CODE || !given) return false;
   const a = crypto.createHash("sha256").update(String(given)).digest();
@@ -40,6 +47,18 @@ http.createServer(async (req, res) => {
     res.writeHead(204, h); return res.end();
   }
   if (url.pathname === "/health") return send(res, 200, { ok: true, db: ready, configured: !!DB_URL && !!FAMILY_CODE, error: ready ? undefined : lastError || undefined }, origin);
+  // Read-only "does Ahmed need to send new pages?" summary for the weekly reminder. No answers or names, just counts.
+  if (url.pathname === "/api/low" && req.method === "GET") {
+    if (!keyOk(url.searchParams.get("k"), STATUS_KEY)) return send(res, 401, { error: "wrong key" }, origin);
+    if (!ready) return send(res, 503, { error: "database not ready" }, origin);
+    try {
+      const r = await pool.query("SELECT json, updated FROM tito_maths_progress WHERE id='tito'");
+      if (!r.rows[0]) return send(res, 200, { low: null, updated: 0 }, origin);
+      let low = null; try { low = JSON.parse(r.rows[0].json).low || []; } catch {}
+      const updated = Number(r.rows[0].updated);
+      return send(res, 200, { low, updated, lastActive: new Date(updated).toISOString() }, origin);
+    } catch (e) { console.error(e.message); return send(res, 500, { error: "server error" }, origin); }
+  }
   if (url.pathname !== "/api/progress") return send(res, 404, { error: "not found" }, origin);
   if (!codeOk(req.headers["x-family-code"])) return send(res, 401, { error: "wrong family code" }, origin);
   if (!ready) return send(res, 503, { error: "database not ready" }, origin);
