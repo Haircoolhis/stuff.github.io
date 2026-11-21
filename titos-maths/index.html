@@ -735,6 +735,16 @@ NBOOK.forEach(s=>{ s.book="NVR"; s.t="nv"; s.day=s.title; s.topic=s.title; s.sho
     if(s.id==="nv24") s.qs.forEach(q=>{ q[2]=T[q[0]-1]; q[3]="Answer from the book's answer pages."; delete q[4].flag; });
     if(s.book==="Verbal") s.qs.forEach(q=>{ delete q[4].flag; });          // every Verbal answer checked against the book
     if(s.id==="en25"){ const q=s.qs[0]; q[2]="A"; q[3]="The book's answer: describing the duvet as a cave makes it seem like it's the same shape as a cave."; }
+    const setQ=(n,prompt,ans,why)=>{ const q=s.qs.find(x=>x[0]===n); if(!q)return; if(prompt)q[1]=prompt; q[2]=ans; q[3]=why; delete q[4].flag; };
+    if(s.id==="en30"){
+      setQ(27,"Which part has the mistake? | A: and guaranteed | B: to be a breakfast serial | C: of exceptional | D: quality. Our farmers harvest their | N: No mistake","B","'serial' should be 'cereal'. They're homophones; 'cereal' is the breakfast food.");
+      setQ(30,"Which part has the mistake? | A: Gripping tightly to the | B: rope: both boys shuffled | C: forward so slowly | D: that they barely moved. | N: No mistake","B","The colon after 'rope' is wrong. A comma should separate the extra information.");
+      s.qs.forEach(q=>delete q[4].flag); }
+    if(s.id==="en38"){
+      setQ(18,"In the third verse, what does the spider promise to show the fly? | A: A looking glass | B: What she looks like | C: The parlour shelf | D: Some pretty curtains | E: A pair of spectacles","A","'You shall behold yourself' in the looking-glass (mirror) on the parlour shelf.");
+      setQ(35,null,"D","There should be a full stop at the end of the sentence.");
+      setQ(39,"Which part has the mistake? | A: discovered a splendid | B: space just behind | C: a restaurant, close to | D: the entrence. But, getting out | N: No mistake","D","'entrence' should be 'entrance'. The ending is 'ance'.");
+      s.qs.forEach(q=>delete q[4].flag); }
     if(s.id==="en24"){ const q=s.qs.find(x=>x[0]===5); if(q&&!q[2].includes("cracked")) q[2].push("cracked"); }
   });
 })();
