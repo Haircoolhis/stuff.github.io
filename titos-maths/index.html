@@ -629,7 +629,10 @@ async function pagesImport(input){
 }
 async function pagesClear(){ if(!twice("pg","Tap again to remove the book pages from this device"))return; const db=await pagesDB(); await new Promise(res=>{const t=db.transaction("kv","readwrite");t.objectStore("kv").delete("pack");t.oncomplete=res;}); PAGES=null; toast("Book pages removed"); render(); }
 function sheetPages(s){ return PAGES&&PAGES.sheets&&PAGES.sheets[s.id] ? PAGES.sheets[s.id].map(k=>PAGES.spreads[k]).filter(Boolean) : []; }
-function pagesPanel(s){ const P=sheetPages(s); if(!P.length) return "";
+const PAGE_BOOKS=["English","NVR","GL"];
+function pagesPanel(s){ const P=sheetPages(s);
+  if(!P.length){ if(!PAGE_BOOKS.includes(s.book)) return "";
+    return `<div class="bookpg" style="padding:10px 12px"><b>📖 Book page not on this device.</b> <span class="lbl">${PAGES?"The book pages file here is an old one. In the Parent area, tap <b>Replace page pack</b> and choose the new <b>titos-book-pages.json</b>.":"Use your paper book, or add the <b>titos-book-pages.json</b> file in the Parent area."}</span></div>`; }
   return `<details class="bookpg" ${view.pgOpen===false?"":"open"} ontoggle="view.pgOpen=this.open"><summary>📖 Book page${P.length>1?"s":""} <span class="lbl">tap a page to zoom</span></summary>
     <div class="pgs">${P.map((u,i)=>`<img src="${u}" alt="Book page ${i+1}" onclick="pageZoom(${i})">`).join("")}</div></details>`; }
 function pageZoom(i,sid){ const s=sheetById(sid||view.sid), P=sheetPages(s); const o=document.createElement("div"); o.className="zoom";
@@ -655,7 +658,7 @@ function renderQV(){
   <div class="dots">${dots}</div>
   <div class="card">
     <div class="qhead"><span>${esc(s.short)} · ${esc(s.title)} · Q${n}</span><span>${view.i+1} of ${s.qs.length}</span></div>
-    <p class="vinstr">${esc(sec)}</p>${sheetPages(s).length?pagesPanel(s):(s.ref?`<p class="refnote">📖 ${esc(s.ref)}</p>`:"")}
+    <p class="vinstr">${esc(sec)}</p>${sheetPages(s).length?pagesPanel(s):(s.ref?`<p class="refnote">📖 ${esc(s.ref)}</p>`:"")+pagesPanel(s)}
     ${(s.alpha||vX(q).alpha)?alphaStrip():""}
     <div id="vq-p-${n}" class="vq">${vAnswerHTML(s,q,locked?null:view.sel,"p",locked)}</div>
     ${locked?"":`<div class="row" style="justify-content:center;margin-top:14px"><button class="btn green" onclick="vCheck()">${isWrite(s,q)?"✍️ Hand in":"Check"}</button></div>`}
@@ -691,7 +694,7 @@ function renderTestV(){
   const c=s.qs.filter(q=>vFilled(s,q,t.answers[q[0]])).length;
   let lastSec=null;
   app.innerHTML=header(true)+`
-  ${sheetPages(s).length?`<div class="card pgcard">${pagesPanel(s)}</div>`:""}
+  ${pagesPanel(s)?`<div class="card pgcard">${pagesPanel(s)}</div>`:""}
   <div class="card"><h2>📝 ${esc(s.title)}</h2>
     ${s.test?"":vHelpBox(s)}
     <p class="sub" style="margin-top:10px">${esc(s.test?s.instr:s.instr)} Answer every question, then tap <b>Finish &amp; mark</b>.</p>
@@ -1252,7 +1255,7 @@ function renderParent(){
       ${last?`<div class="pm"><button class="y" onclick="pMark('${s.id}',${q[0]},true)">✓ Tito is right</button><button class="n" onclick="pMark('${s.id}',${q[0]},false)">✗ Tito is wrong</button></div>`:""}</div>`; }).join("")}</div>`; })()}
   <div class="card"><h3 style="margin-bottom:6px">📖 Book pages on this device</h3>
     <p class="sub" style="margin-bottom:8px">Shows the English passages, Non-Verbal shapes and 11+ Maths diagrams next to the questions. The pages stay on this device only and never go on the website.</p>
-    ${PAGES?`<p style="font-weight:800;color:#0F6B46;margin:0 0 8px">✅ ${Object.keys(PAGES.spreads).length} book pages added</p>`:""}
+    ${PAGES?`<p style="font-weight:800;color:#0F6B46;margin:0 0 4px">✅ ${Object.keys(PAGES.spreads).length} book pages added</p><p class="sub" style="margin:0 0 8px">${["English","NVR","GL"].map(bk=>{const L=SHEETS.filter(x=>x.book===bk),n=L.filter(x=>sheetPages(x).length).length;return `${n===L.length?"✅":n?"⚠️":"❌"} ${BOOKNAME[bk]}: ${n}/${L.length} sheets`;}).join(" · ")}${["English","NVR","GL"].some(bk=>SHEETS.some(x=>x.book===bk&&!sheetPages(x).length))?"<br><b>Some pages are missing: replace with the newest titos-book-pages.json.</b>":""}</p>`:""}
     <label class="btn ${PAGES?"ghost":""} small" style="display:inline-block;cursor:pointer">${PAGES?"Replace page pack":"📥 Add page pack file"}<input type="file" accept=".json,application/json" style="display:none" onchange="pagesImport(this)"></label>
     ${PAGES?`<button class="link" style="color:var(--red)" onclick="pagesClear()">Remove pages</button>`:""}
   </div>
