@@ -760,7 +760,7 @@ GBOOK.forEach(s=>{ s.book="GL"; s.t="gl"; s.day=s.title; s.topic=s.title; s.shor
 const KEY="tito-maths-v1";
 let store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){store={}}
-function save(){store._updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){};queueSync();}
+function save(){store._updated=Date.now();try{store.low=lowBooks().map(b=>({book:BOOKNAME[b.bk],left:b.left,next:NEXT_PAGES[b.bk]||""}));}catch(e){}try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){};queueSync();}
 function flushNow(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} try{ if(typeof backend!=="undefined"&&backend&&!readOnly){ clearTimeout(syncT); pushSync(); } }catch(e){} }
 addEventListener("pagehide",flushNow); document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushNow(); });
 setInterval(()=>{ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} },15000);
@@ -907,6 +907,10 @@ function setUnlock(id,on){ store.unlocked=store.unlocked||{}; if(on)store.unlock
 function isBookDone(s){ return !!(s&&store.bookDone&&store.bookDone[s.id]); }
 function hideBook(){ return !!(store.settings&&store.settings.hideBook); }
 function sheetFinished(s){ const t=store.tests?.[s.id]; return isBookDone(s)||(t&&t.submitted)||sheetDone(s); }
+const BOOKNAME={Maths:"100 Days Maths",GL:"11+ Maths",Verbal:"Verbal Reasoning",English:"English",NVR:"Non-Verbal"};
+const NEXT_PAGES={Maths:"Days 51 onwards",GL:"Assessment Test 3 onwards (page 52+)"};
+function lowBooks(){ return ["Maths","GL","Verbal","English","NVR"].map(bk=>{ const L=SHEETS.filter(x=>x.book===bk); return {bk,left:L.filter(x=>!sheetFinished(x)).length,total:L.length}; }).filter(b=>b.total&&b.left<=3); }
+function lowLine(b){ return (b.left?`Only ${b.left} sheet${b.left>1?"s":""} left in ${BOOKNAME[b.bk]}`:`${BOOKNAME[b.bk]} is finished`)+`. Time to photograph the next pages${NEXT_PAGES[b.bk]?` (${NEXT_PAGES[b.bk]})`:""} and send them to Claude.`; }
 function setBookDone(id,on,quiet){ store.bookDone=store.bookDone||{}; const s=sheetById(id);
   if(on){ store.bookDone[id]=true; if(!quiet)logEvent(`Parent marked ${sLabel(s)} as done in the book`); maybeUnlockNext(s); }
   else { delete store.bookDone[id]; if(!quiet)logEvent(`Parent gave ${sLabel(s)} back in the app`); }
@@ -1157,6 +1161,7 @@ function shortReport(sid){
   const tk=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]);
   if(tk.length) out+=`\n🔎 Mistakes: `+tk.map(m=>`${MISTAKES[m].name} (${tally[m]})`).join(", ")+"\n";
   if(!toFix.length&&right===rows.length) out+=`\n🌟 All done!\n`;
+  lowBooks().forEach(b=>{ out+=`\n📸 For Mum or Dad: ${lowLine(b)}\n`; });
   out+=`\nSent ${fmt(Date.now())}`;
   return out;
 }
@@ -1233,6 +1238,7 @@ function renderParent(){
   app.innerHTML=header(true)+`
   <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>👨‍👩‍👧 Parent area</h2><button class="btn ghost small" onclick="parentOK=false;go('home')">🔒 Lock</button></div>
     <p class="sub" style="margin-top:6px"><span class="sync">${SYNC_TXT[syncState]}</span></p></div>
+  ${lowBooks().length?`<div class="card" style="border:2px solid var(--amber,#F5A524)"><h3 style="margin-bottom:6px">📸 Time for new pages</h3>${lowBooks().map(b=>`<p class="sub" style="margin:4px 0">${esc(lowLine(b))}</p>`).join("")}</div>`:""}
   ${rows}
   ${(()=>{ const R=[]; SHEETS.forEach(s=>s.qs.forEach(q=>{ const r=store[s.id]?.[q[0]]; if(r&&r.status==="review") R.push({s,q,r}); }));
     return `<div class="card"><h3 style="margin-bottom:6px">✍️ Answers to mark ${R.length?`<span class="pill p-help">${R.length}</span>`:""}</h3>
