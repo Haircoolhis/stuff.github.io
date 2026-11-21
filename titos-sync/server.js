@@ -20,6 +20,16 @@ if (DB_URL) {
     .catch(e => { lastError = e.message; console.error("Database setup failed:", e.message); });
 }
 
+// Leave a line in the server log when a book is nearly finished, so the weekly reminder can spot it.
+let lastLow = "", lastLowAt = 0;
+function noteLow(json) {
+  try {
+    const low = JSON.parse(json).low || [];
+    const txt = low.map(b => `${b.book}: ${b.left} left${b.next ? ` (next: ${b.next})` : ""}`).join("; ");
+    if (txt && (txt !== lastLow || Date.now() - lastLowAt > 86400000)) { console.log("NEW-PAGES-NEEDED " + txt); lastLowAt = Date.now(); }
+    lastLow = txt;
+  } catch {}
+}
 function keyOk(given, want) {
   if (!want || !given) return false;
   const a = crypto.createHash("sha256").update(String(given)).digest();
@@ -81,7 +91,7 @@ http.createServer(async (req, res) => {
          ON CONFLICT (id) DO UPDATE SET json = EXCLUDED.json, updated = EXCLUDED.updated, saved_at = now()
          WHERE tito_maths_progress.updated < EXCLUDED.updated
          RETURNING updated`, [data.json, updated]);
-      if (r.rowCount) return send(res, 200, { ok: true, updated }, origin);
+      if (r.rowCount) { noteLow(data.json); return send(res, 200, { ok: true, updated }, origin); }
       const cur = await pool.query("SELECT json, updated FROM tito_maths_progress WHERE id='tito'");
       return send(res, 409, { json: cur.rows[0].json, updated: Number(cur.rows[0].updated) }, origin);
     }
