@@ -723,6 +723,21 @@ const NBOOK=[{"id":"nv10","page":"10–11","title":"Complete the Grid","instr":"
 NBOOK.forEach(s=>{ s.book="NVR"; s.t="nv"; s.day=s.title; s.topic=s.title; s.short="p"+s.page;
   s.qs=s.qs.map(q=>[q[0],q[1],q[2],q[3],(q[4]&&typeof q[4]==="object")?q[4]:{}]);
   MISTAKES["v_"+s.id]={name:s.title,tip:s.tip||s.instr}; SHEETS.push(s); });
+
+/* ===== answer keys from the books' answer pages (Nov 2026) ===== */
+(function(){
+  const NV={nv10:{4:"c",5:"a",6:"b",7:"d"},nv11:{8:"e",9:"d",10:"a"},nv12:{3:"b",4:"d",5:"b"},nv13:{3:"d",4:"b",5:"c"},
+    nv14:{4:"b",5:"b",6:"a",7:"e"},nv15:{8:"e",9:"b",10:"a"},nv16:{3:"b",4:"e",5:"a"},nv17:{6:"a",7:"c",8:"d",9:"b"},
+    nv18:{3:"d",4:"a",5:"d"},nv19:{6:"d",7:"c",8:"a"},nv20:{3:"d",4:"c",5:"c"},nv21:{6:"d",7:"c",8:"e"},nv22:{3:"b",4:"e"},nv23:{3:"b",4:"c"}};
+  const T="abdcabeb"+"eecbcbdaba"+"ebcbabecca"+"decbdacaed"+"bbdaedad"; // Assessment Test 1, Q1-46 in order
+  SHEETS.forEach(s=>{
+    if(NV[s.id]) s.qs.forEach(q=>{ const a=NV[s.id][q[0]]; if(a){ q[2]=a; q[3]="Answer from the book's answer pages."; delete q[4].flag; } });
+    if(s.id==="nv24") s.qs.forEach(q=>{ q[2]=T[q[0]-1]; q[3]="Answer from the book's answer pages."; delete q[4].flag; });
+    if(s.book==="Verbal") s.qs.forEach(q=>{ delete q[4].flag; });          // every Verbal answer checked against the book
+    if(s.id==="en25"){ const q=s.qs[0]; q[2]="A"; q[3]="The book's answer: describing the duvet as a cave makes it seem like it's the same shape as a cave."; }
+    if(s.id==="en24"){ const q=s.qs.find(x=>x[0]===5); if(q&&!q[2].includes("cracked")) q[2].push("cracked"); }
+  });
+})();
 /* ===================== STORAGE ===================== */
 const KEY="tito-maths-v1";
 let store={};
@@ -884,6 +899,10 @@ function bookDoneBefore(bk,id){ const L=SHEETS.filter(x=>x.book===bk), i=L.findI
   logEvent(`Parent marked ${i} ${bk} sheet${i===1?"":"s"} before ${sLabel(L[i])} as done in the book`); save(); toast(`📕 ${i} sheet${i===1?"":"s"} marked done in book`); render(); }
 function maybeUnlockNext(s){ if(!s||!SHEETS.includes(s)||!lockOn()||!autoNext()||!sheetFinished(s))return;
   const L=SHEETS.filter(x=>x.book===s.book), nx=L[L.indexOf(s)+1]; if(nx&&!isUnlocked(nx)){ setUnlock(nx.id,true); logEvent(`${sLabel(nx)} unlocked automatically`); toast(`🔓 ${isV(nx)?nx.short:nx.day} is now unlocked!`); } }
+function remarkKeyed(){ let ch=0; SHEETS.forEach(s=>s.qs.forEach(q=>{ const r=store[s.id]?.[q[0]]; if(!r||r.status!=="review"||r.answerFull===undefined||needsParent(s,q)||vKind(s,q)==="open")return;
+    const ok=vCorrect(s,q,r.answerFull), t=store.tests?.[s.id]; r.status=ok?"star":"wrong"; if(t&&t.submitted&&ok){t.score=(t.score||0)+1;} r.testRight=ok; ch++; }));
+  if(ch){ logEvent(`${ch} waiting answer${ch>1?"s":""} marked automatically from the book's answer key`); save(); } }
+setTimeout(remarkKeyed,1500);
 function flaggedQs(){ const out=[]; SHEETS.forEach(s=>s.qs.forEach(q=>{ if(isV(s)&&vX(q).flag) out.push({s,q}); })); return out; }
 function pMark(sid,n,right){
   if(!parentOK)return; const s=sheetById(sid), r=rec(sid,n), t=store.tests?.[sid];
@@ -1205,7 +1224,7 @@ function renderParent(){
   ${(()=>{ const F=flaggedQs(); return `<div class="card"><h3 style="margin-bottom:6px">⚑ Questions to check</h3>
     <p class="sub" style="margin-bottom:6px">I worked these answers out myself and I'm not sure of them (part of the page was cut off, or the pattern could be read two ways). Check them against the book's answer pages and mark Tito's answer yourself.</p>
     ${F.map(({s,q})=>{ const r=store[s.id]?.[q[0]]; const last=r?.tries?.[r.tries.length-1];
-      return `<div class="flagq"><b>${esc(s.short)} ${esc(s.title)} · Q${q[0]}</b><br><span class="lbl">${esc(qText(s,q))}</span><br>My answer: <b>${esc(qAns(s,q))}</b> · Tito: <b>${last?esc(last):"not answered yet"}</b>${r?.parentMarked?` · 👤 marked ${r.parentMarked}`:""}
+      return `<div class="flagq"><b>${({Verbal:"🔤 Verbal",English:"📚 English",NVR:"🔷 Non-Verbal"})[s.book]||""} book · ${esc(s.short)} ${esc(s.title)} · Q${q[0]}</b><br><span class="lbl">${esc(qText(s,q))}</span><br>My answer: <b>${esc(qAns(s,q))}</b> · Tito: <b>${last?esc(last):"not answered yet"}</b>${r?.parentMarked?` · 👤 marked ${r.parentMarked}`:""}
       ${last?`<div class="pm"><button class="y" onclick="pMark('${s.id}',${q[0]},true)">✓ Tito is right</button><button class="n" onclick="pMark('${s.id}',${q[0]},false)">✗ Tito is wrong</button></div>`:""}</div>`; }).join("")}</div>`; })()}
   <div class="card"><h3 style="margin-bottom:6px">📖 Book pages on this device</h3>
     <p class="sub" style="margin-bottom:8px">Shows the English passages and Non-Verbal shapes next to the questions. The pages stay on this device only and never go on the website.</p>
