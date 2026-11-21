@@ -905,7 +905,7 @@ function renderHome(){
     <h2 class="hello">Hi Tito! 👋</h2>
     ${nx?`<p class="sub">Up next: <b>${esc(isV(nx)?nx.short:nx.day)}</b> · ${esc(nx.topic)}</p>
     <div class="row" style="margin-top:12px">
-      <button class="btn" onclick="startTest('${nx.id}')">📝 ${testInProgress(nx.id)?"Continue":"Start"} test</button>
+      <button class="btn" onclick="startTest('${nx.id}')">${testDone(nx.id)?"📊 See test results":`📝 ${testInProgress(nx.id)?"Continue":"Start"} test`}</button>
       ${canPractise(nx)?`<button class="btn ghost" onclick="openSheet('${nx.id}')">Practise</button>`:""}
     </div>`:`<p class="sub">${allDone?"You've done every sheet in this book. Amazing! 🌟":"You've finished everything that's unlocked. 🎉 Ask Mum or Dad to unlock the next sheet."}</p>`}
     <p class="mode-explain">📝 <b>Test</b>: answer everything first, marks and corrections at the end.${testFirst()?" Practise opens after the test.":" &nbsp;·&nbsp; <b>Practise</b>: check each answer as you go."}</p>
@@ -919,7 +919,7 @@ function renderHome(){
       if(!isUnlocked(s)) return `<div class="mini locked"><div class="d">${isV(s)?esc(s.short):s.day}<span>🔒</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}<p class="lbl" style="margin:8px 0 0">Locked</p></div>`; return `<div class="mini ${s===nx?"next":""}">
       <div class="d">${isV(s)?esc(s.short):s.day}<span>⭐ ${pp.stars}</span></div>${isV(s)?`<div class="t">${esc(s.title)}</div>`:""}
       <div class="bar"><i style="width:${pp.done/pp.total*100}%"></i></div>
-      <div class="row"><button class="btn small" onclick="startTest('${s.id}')">📝 ${testInProgress(s.id)?"Resume":"Test"}</button>${canPractise(s)?`<button class="btn ghost small" onclick="openSheet('${s.id}')">Practise</button>`:""}</div>
+      <div class="row"><button class="btn small" onclick="startTest('${s.id}')">${testDone(s.id)?`📊 ${store.tests[s.id].score}/${store.tests[s.id].total}`:`📝 ${testInProgress(s.id)?"Resume":"Test"}`}</button>${canPractise(s)?`<button class="btn ghost small" onclick="openSheet('${s.id}')">Practise</button>`:""}</div>
     </div>`}).join("")}</div></details>`; }).join("")}
   <div class="row" style="justify-content:center;margin-top:18px"><button class="link" onclick="go('pin')">👨‍👩‍👧 Parent area</button></div>`;
 }
@@ -1161,6 +1161,7 @@ function renderResults(){
     </table>
     <div class="row" style="margin-top:14px">
       <button class="btn ghost small" onclick="copyReport()">📋 Copy report</button>
+      ${parentOK&&store.tests?.[s.id]?.submitted?`<button class="link" onclick="redoTest('${s.id}')">🔄 Clear this result so she can redo the test</button>`:""}
     </div>
   </div>`;
 }
@@ -1330,9 +1331,15 @@ function startTest(id){
   if(isBookDone(sheetById(id))&&!parentOK){ toast("📕 You've done this one in your book!"); return; }
   if(!isUnlocked(sheetById(id))){ toast("🔒 This sheet is locked. Ask Mum or Dad to unlock it."); return; }
   store.tests=store.tests||{}; const t=store.tests[id];
-  if(!t||t.submitted){ delete store[id]; store.tests[id]={answers:{},submitted:false}; save(); }
+  // A finished test is never wiped by opening it again: show its results instead. Only a parent can reset it.
+  if(t&&t.submitted){ view={screen:"results",sid:id,fromParent:parentOK&&view.screen==="parent"}; render(); window.scrollTo(0,0); return; }
+  if(!t){ delete store[id]; store.tests[id]={answers:{},submitted:false}; save(); }
   view={screen:"test",sid:id}; render(); window.scrollTo(0,0);
 }
+function redoTest(id){ if(!parentOK)return; if(!twice("redo"+id,"Tap again to clear this result so Tito can do the test again"))return;
+  const s=sheetById(id), t=store.tests[id]; logEvent(`Parent cleared the ${sLabel(s)} test result${t&&t.submitted?` (was ${t.score}/${t.total})`:""} so it can be done again`);
+  delete store[id]; store.tests[id]={answers:{},submitted:false}; save(); toast("Cleared. Tito can do the test again."); go("parent"); }
+function testDone(id){ const t=store.tests&&store.tests[id]; return !!(t&&t.submitted); }
 function renderTest(){
   if(isV(sheetById(view.sid))) return renderTestV();
   const s=sheetById(view.sid), t=store.tests[s.id];
