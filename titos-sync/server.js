@@ -16,6 +16,8 @@ if (DB_URL) {
   pool = new Pool({ connectionString: DB_URL, ssl: external ? { rejectUnauthorized: false } : false, max: 3 });
   pool.query(`CREATE TABLE IF NOT EXISTS tito_maths_progress (
       id TEXT PRIMARY KEY, json TEXT NOT NULL, updated BIGINT NOT NULL, saved_at TIMESTAMPTZ NOT NULL DEFAULT now())`)
+    .then(() => pool.query(`CREATE TABLE IF NOT EXISTS tito_devices (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, last_seen TIMESTAMPTZ NOT NULL DEFAULT now(), last_write TIMESTAMPTZ)`))
     .then(() => { ready = true; console.log("Database ready"); })
     .catch(e => { lastError = e.message; console.error("Database setup failed:", e.message); });
 }
@@ -52,7 +54,7 @@ http.createServer(async (req, res) => {
   const origin = req.headers.origin;
   const url = new URL(req.url, "http://x");
   if (req.method === "OPTIONS") {
-    const h = { "access-control-allow-methods": "GET,PUT,OPTIONS", "access-control-allow-headers": "content-type,x-family-code", "access-control-max-age": "86400" };
+    const h = { "access-control-allow-methods": "GET,PUT,OPTIONS", "access-control-allow-headers": "content-type,x-family-code,x-device-id,x-device-name", "access-control-max-age": "86400" };
     if (origin && ORIGINS.includes(origin)) { h["access-control-allow-origin"] = origin; h["vary"] = "Origin"; }
     res.writeHead(204, h); return res.end();
   }
@@ -69,10 +71,21 @@ http.createServer(async (req, res) => {
       return send(res, 200, { low, updated, lastActive: new Date(updated).toISOString() }, origin);
     } catch (e) { console.error(e.message); return send(res, 500, { error: "server error" }, origin); }
   }
-  if (url.pathname !== "/api/progress") return send(res, 404, { error: "not found" }, origin);
+  if (url.pathname !== "/api/progress" && url.pathname !== "/api/devices") return send(res, 404, { error: "not found" }, origin);
   if (!codeOk(req.headers["x-family-code"])) return send(res, 401, { error: "wrong family code" }, origin);
   if (!ready) return send(res, 503, { error: "database not ready" }, origin);
 
+  // Remember which devices use the family code (an id and a name like "Tito's iPad"), so parents can see what's linked.
+  const devId = String(req.headers["x-device-id"] || "").slice(0, 40), devName = String(req.headers["x-device-name"] || "").slice(0, 40);
+  if (devId) pool.query(`INSERT INTO tito_devices (id, name, last_seen, last_write) VALUES ($1, $2, now(), CASE WHEN $3 THEN now() END)
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, last_seen = now(), last_write = COALESCE(EXCLUDED.last_write, tito_devices.last_write)`,
+      [devId, devName || "Unnamed device", req.method === "PUT"]).catch(e => console.error("device note failed:", e.message));
+  if (url.pathname === "/api/devices") {
+    try {
+      const r = await pool.query("SELECT id, name, last_seen, last_write FROM tito_devices ORDER BY last_seen DESC LIMIT 20");
+      return send(res, 200, { devices: r.rows }, origin);
+    } catch (e) { return send(res, 500, { error: "server error" }, origin); }
+  }
   try {
     if (req.method === "GET") {
       const r = await pool.query("SELECT json, updated FROM tito_maths_progress WHERE id='tito'");

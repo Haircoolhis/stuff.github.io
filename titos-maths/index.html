@@ -774,12 +774,20 @@ const SYNC_URL="https://titos-maths-sync.onrender.com";
 let backend=null, docRef=null, syncState="local", writing=false, again=false, readOnly=false, syncT=null, uploadedLocal=false, pollT=null;
 const SYNC_TXT={local:"📱 Saved on this device only",loading:"☁️ Connecting…",synced:"☁️ Progress synced",offline:"⚠️ Not synced yet — saved on this device",readonly:"👀 View only — progress from Tito's device",badcode:"⚠️ Family code not recognised"};
 function famCode(){try{return localStorage.getItem("tito-family")||""}catch(e){return ""}}
+function devGuess(){ const u=navigator.userAgent||""; return /iPad|Macintosh/.test(u)&&"ontouchend" in document?"iPad":/iPhone/.test(u)?"iPhone":/Android/.test(u)?(/Mobile/.test(u)?"Android phone":"Android tablet"):"Computer"; }
+function devId(){ try{ let d=localStorage.getItem("tito-device-id"); if(!d){ d=Math.random().toString(36).slice(2,12)+Date.now().toString(36); localStorage.setItem("tito-device-id",d);} return d; }catch(e){ return ""; } }
+function devName(){ try{ return localStorage.getItem("tito-device-name")||devGuess(); }catch(e){ return devGuess(); } }
+function syncHeaders(extra){ return Object.assign({"x-family-code":famCode(),"x-device-id":devId(),"x-device-name":devName()},extra||{}); }
+let DEVICES=null;
+async function loadDevices(){ if(!famCode())return; try{ const r=await fetch(SYNC_URL+"/api/devices",{headers:syncHeaders(),cache:"no-store"}); if(r.ok){ DEVICES=(await r.json()).devices; if(view.screen==="parent") render(); } }catch(e){} }
+function saveDevName(){ const v=(document.getElementById("devname").value||"").trim().slice(0,40); try{ v?localStorage.setItem("tito-device-name",v):localStorage.removeItem("tito-device-name"); }catch(e){} toast("Device name saved"); pollHttp().then(loadDevices); }
+function ago(t){ const m=Math.round((Date.now()-new Date(t))/60000); return m<2?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" days ago"; }
 function workCount(st){let n=0;for(const k in (st||{})){const v=st[k];if(k==="tests"||k==="log"||k==="contacts"||k==="pin"||k==="_updated")continue;if(v&&typeof v==="object")n+=Object.keys(v).length;}return n;}
 function adopt(remote){ if(!remote||!remote.json)return false; if(!(remote.updated>(store._updated||0)))return false;
   try{ store=JSON.parse(remote.json); try{localStorage.setItem(KEY,remote.json)}catch(e){} onRemote(); return true; }catch(e){return false;} }
 const httpBackend={
-  async get(){ const r=await fetch(SYNC_URL+"/api/progress",{headers:{"x-family-code":famCode()},cache:"no-store"}); if(r.status===401)throw{code:"auth"}; if(!r.ok)throw{code:"unavailable"}; return r.json(); },
-  async put(json,updated){ const r=await fetch(SYNC_URL+"/api/progress",{method:"PUT",headers:{"x-family-code":famCode(),"content-type":"application/json"},body:JSON.stringify({json,updated})});
+  async get(){ const r=await fetch(SYNC_URL+"/api/progress",{headers:syncHeaders(),cache:"no-store"}); if(r.status===401)throw{code:"auth"}; if(!r.ok)throw{code:"unavailable"}; return r.json(); },
+  async put(json,updated){ const r=await fetch(SYNC_URL+"/api/progress",{method:"PUT",headers:syncHeaders({"content-type":"application/json"}),body:JSON.stringify({json,updated})});
     if(r.status===401)throw{code:"auth"}; if(r.status===409)return{conflict:await r.json()}; if(!r.ok)throw{code:"unavailable"}; return{ok:true}; }
 };
 async function pollHttp(){
@@ -796,23 +804,37 @@ function startHttp(){
   pollT=setInterval(pollHttp,15000);
 }
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) pollHttp(); });
-/* Linking a device: keep whichever copy holds more of Tito's work, so a new empty phone can't wipe her progress */
+/* Linking a device: combine this device's work with the family copy, so nothing done on either is lost */
+const SKIPK={tests:1,log:1,contacts:1,pin:1,_updated:1,settings:1,unlocked:1,bookDone:1,low:1};
+function recScore(r){ if(!r)return -1; return (r.tries?r.tries.length:0)*10+(r.status?5:0)+(r.draft?1:0); }
+function testScore(t){ if(!t)return -1; return t.submitted?1e13+(t.at||0):Object.keys(t.answers||{}).length; }
+function mergeStores(a,b){ a=a||{}; b=b||{}; const out=JSON.parse(JSON.stringify(b));
+  out.tests=out.tests||{}; for(const id in (a.tests||{})){ if(testScore(a.tests[id])>testScore(out.tests[id])){ out.tests[id]=a.tests[id]; } }
+  for(const k in a){ if(SKIPK[k]||!a[k]||typeof a[k]!=="object")continue;
+    // practice answers for one sheet: keep the fuller record of each question, but don't mix a test's sheet across copies
+    const tw=out.tests[k]&&a.tests&&a.tests[k]===out.tests[k]; if(!out[k]||tw){ out[k]=a[k]; continue; }
+    for(const n in a[k]){ if(recScore(a[k][n])>recScore(out[k][n])) out[k][n]=a[k][n]; } }
+  ["unlocked","bookDone"].forEach(k=>{ out[k]=Object.assign({},a[k]||{},b[k]||{}); });
+  ["pin","contacts","settings"].forEach(k=>{ if(out[k]==null&&a[k]!=null) out[k]=a[k]; });
+  const seen=new Set(); out.log=[...(b.log||[]),...(a.log||[])].filter(e=>{const key=e.t+"|"+e.text; if(seen.has(key))return false; seen.add(key); return true;}).sort((x,y)=>y.t-x.t).slice(0,60);
+  return out; }
+/* (old rule kept for reference: whichever copy held more work won) */
 async function linkDevice(code){
   try{localStorage.setItem("tito-family",code)}catch(e){}
   backend=httpBackend; clearInterval(pollT); setSync("loading");
   try{
     const remote=await httpBackend.get(); let remoteStore=null; try{remoteStore=remote.json?JSON.parse(remote.json):null}catch(e){}
     const local=store;
-    if(remoteStore && workCount(remoteStore)>=workCount(local)){
-      store=remoteStore; ["pin","contacts"].forEach(k=>{ if(!store[k]&&local[k]) store[k]=local[k]; });
-      store._updated=Math.max(Date.now(),(remote.updated||0)+1);
+    if(remoteStore){
+      store=mergeStores(local,remoteStore); store._updated=Math.max(Date.now(),(remote.updated||0)+1);
       try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}
-      await httpBackend.put(JSON.stringify(store),store._updated); toast("Linked — showing the family's progress");
+      await httpBackend.put(JSON.stringify(store),store._updated); logEvent("Device linked: this device's work was combined with the family copy"); save();
+      toast("Linked — this device's work is now shared with the family");
     } else {
       store._updated=Math.max(Date.now(),(remote.updated||0)+1); try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}
       await httpBackend.put(JSON.stringify(store),store._updated); toast("Linked — this device's progress is now shared");
     }
-    uploadedLocal=true; setSync("synced"); pollT=setInterval(pollHttp,15000); render();
+    uploadedLocal=true; setSync("synced"); pollT=setInterval(pollHttp,15000); render(); loadDevices();
   }catch(e){
     if(e&&e.code==="auth"){ try{localStorage.removeItem("tito-family")}catch(_){} backend=null; setSync("local"); toast("That family code isn't right"); }
     else { setSync("offline"); toast("Couldn't reach the server — try again in a minute"); pollT=setInterval(pollHttp,15000); }
@@ -1217,7 +1239,7 @@ function pinGo(){
   if(!/^\d{4}$/.test(a)){toast("PIN must be 4 numbers");return;}
   if(!store.pin){ if(a!==b){toast("The two PINs don't match");return;} store.pin=a; save(); }
   else if(a!==store.pin){ toast("Wrong PIN"); document.getElementById("pin1").value=""; return; }
-  parentOK=true; view={screen:"parent"}; render();
+  parentOK=true; view={screen:"parent"}; render(); loadDevices();
 }
 const fmt=t=>new Date(t).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
 function saveFam(){ const c=document.getElementById("fam").value.trim().toUpperCase().replace(/\s/g,""); if(c.length<6){toast("Check the family code");return;} linkDevice(c); }
@@ -1280,7 +1302,9 @@ function renderParent(){
     ${log.length?log.map(e=>`<div class="mist"><span>${esc(e.text)}</span><span class="sub" style="font-size:13px">${fmt(e.t)}</span></div>`).join(""):`<p class="sub">Nothing yet.</p>`}</div>
   <div class="card"><h3 style="margin-bottom:6px">Share progress between phones</h3>
     <p class="sub" style="margin-bottom:10px">Enter the family code once on each device: Tito's tablet, Dad's phone and Mum's phone. Her progress then updates on all of them automatically.</p>
-    ${famCode()?`<p style="margin:0 0 10px;font-weight:800;color:#0F6B46">✅ This device is linked</p>`:""}
+    ${famCode()?`<p style="margin:0 0 10px;font-weight:800;color:#0F6B46">✅ This device is linked</p>`:`<p style="margin:0 0 10px;font-weight:800;color:#B42318">⚠️ This device is not linked, so its work stays here only.</p>`}
+    ${famCode()?`<div style="margin:0 0 12px"><b>Linked devices</b>${DEVICES?DEVICES.map(d=>`<div class="mist"><span>${d.id===devId()?"👉 ":""}${esc(d.name)}${d.id===devId()?" (this one)":""}</span><span class="sub" style="font-size:13px">seen ${ago(d.last_seen)}${d.last_write?` · last saved work ${ago(d.last_write)}`:""}</span></div>`).join("")||`<p class="sub">None yet.</p>`:`<p class="sub">Loading…</p>`}
+      <form onsubmit="event.preventDefault();saveDevName()" class="row" style="margin-top:8px;gap:8px"><input id="devname" class="tans" style="text-align:left;flex:1;min-width:160px" maxlength="40" value="${esc(devName())}" placeholder="e.g. Tito's iPad"><button class="btn small" type="submit">Name this device</button></form></div>`:""}
     <form onsubmit="event.preventDefault();saveFam()">
       <input id="fam" class="tans" style="text-align:left;letter-spacing:2px" autocapitalize="characters" autocomplete="off" value="${esc(famCode())}" placeholder="Family code">
       <div class="row" style="margin-top:10px"><button class="btn small" type="submit">${famCode()?"Update code":"Link this device"}</button>
