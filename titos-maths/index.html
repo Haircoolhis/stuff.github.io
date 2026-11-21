@@ -202,6 +202,7 @@ th{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.5p
   .cell.dp{width:14px}
   .ans{width:170px;font-size:30px}
 }
+.subjtag{display:inline-block;font-weight:800;font-size:14px;padding:4px 10px;border-radius:999px;background:#EEF0FF;color:#3B3FB6;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -681,7 +682,7 @@ function vCheck(){
   r.tries.push(vShow(s,q,v));
   if(needsParent(s,q)||(vKind(s,q)==="open"&&!vCorrect(s,q,v))){ r.status="review"; r.answerFull=v; logEvent(`${s.title} Q${n} is waiting for you to mark`); save(); view.hint=0; renderQV(); return; }
   if(vCorrect(s,q,v)){ setTimeout(()=>maybeUnlockNext(s),0); const wasWrong=r.status==="wrong"; r.status=r.tries.length===1&&!r.lined&&!r.blank?"star":"ok";
-    if(wasWrong && !s.qs.some(x=>store[s.id]?.[x[0]]?.status==="wrong")) logEvent(`Finished all corrections for ${s.title}`);
+    if(wasWrong && !s.qs.some(x=>store[s.id]?.[x[0]]?.status==="wrong")) logEvent(`Finished all corrections for ${sLabel(s)}`);
     save(); confetti(); }
   else { r.mistakes.push("v_"+s.id); save(); }
   view.hint=0; renderQV();
@@ -695,7 +696,7 @@ function renderTestV(){
   let lastSec=null;
   app.innerHTML=header(true)+`
   ${pagesPanel(s)?`<div class="card pgcard">${pagesPanel(s)}</div>`:""}
-  <div class="card"><h2>📝 ${esc(s.title)}</h2>
+  <div class="card">${subjTag(s)}<h2>📝 ${esc(s.title)}${s.test?"":" test"}</h2>
     ${s.test?"":vHelpBox(s)}
     <p class="sub" style="margin-top:10px">${esc(s.test?s.instr:s.instr)} Answer every question, then tap <b>Finish &amp; mark</b>.</p>
     <div class="bar" style="margin-top:10px"><i id="tbar" style="width:${c/s.qs.length*100}%"></i></div>
@@ -893,7 +894,7 @@ let curBook=(()=>{try{return localStorage.getItem("tito-book")||"Maths"}catch(e)
 function setBook(b){ curBook=b; try{localStorage.setItem("tito-book",b)}catch(e){} renderHome(); }
 const bookSheets=()=>SHEETS.filter(s=>s.book===curBook);
 function nextSheet(){ const L=bookSheets().filter(isUnlocked); return L.find(s=>testInProgress(s.id)) || L.find(s=>!sheetFinished(s)) || null; }
-const sLabel=s=>isV(s)?s.title:s.day;
+const sLabel=s=>`${SUBJ[s.book].replace(/^\S+ /,"")}: ${isV(s)?s.title:s.day}`;
 function renderHome(){
   const nx=nextSheet(), groups=[];
   const allDone=bookSheets().every(sheetFinished);
@@ -903,7 +904,7 @@ function renderHome(){
   <div class="booktabs"><button class="${curBook==="Maths"?"on":""}" onclick="setBook('Maths')">🔢 100 Days</button><button class="${curBook==="GL"?"on":""}" onclick="setBook('GL')">🧮 11+ Maths</button><button class="${curBook==="Verbal"?"on":""}" onclick="setBook('Verbal')">🔤 Verbal</button><button class="${curBook==="English"?"on":""}" onclick="setBook('English')">📚 English</button><button class="${curBook==="NVR"?"on":""}" onclick="setBook('NVR')">🔷 Non-Verbal</button></div>
   <div class="card">
     <h2 class="hello">Hi Tito! 👋</h2>
-    ${nx?`<p class="sub">Up next: <b>${esc(isV(nx)?nx.short:nx.day)}</b> · ${esc(nx.topic)}</p>
+    ${nx?`<p class="sub">Up next: <b>${subj(nx)}</b> · <b>${esc(isV(nx)?nx.short:nx.day)}</b> · ${esc(nx.topic)}</p>
     <div class="row" style="margin-top:12px">
       <button class="btn" onclick="startTest('${nx.id}')">${testDone(nx.id)?"📊 See test results":`📝 ${testInProgress(nx.id)?"Continue":"Start"} test`}</button>
       ${canPractise(nx)?`<button class="btn ghost" onclick="openSheet('${nx.id}')">Practise</button>`:""}
@@ -932,6 +933,9 @@ function setUnlock(id,on){ store.unlocked=store.unlocked||{}; if(on)store.unlock
 function isBookDone(s){ return !!(s&&store.bookDone&&store.bookDone[s.id]); }
 function hideBook(){ return !!(store.settings&&store.settings.hideBook); }
 function sheetFinished(s){ const t=store.tests?.[s.id]; return isBookDone(s)||(t&&t.submitted)||sheetDone(s); }
+const SUBJ={Maths:"🔢 100 Days Maths",GL:"🧮 11+ Maths",Verbal:"🔤 Verbal Reasoning",English:"📚 English",NVR:"🔷 Non-Verbal Reasoning"};
+function subj(s){ return SUBJ[s.book]||"🔢 Maths"; }
+function subjTag(s){ return `<div class="subjtag">${subj(s)}</div>`; }
 const BOOKNAME={Maths:"100 Days Maths",GL:"11+ Maths",Verbal:"Verbal Reasoning",English:"English",NVR:"Non-Verbal"};
 const NEXT_PAGES={Maths:"Days 51 onwards",GL:"Assessment Test 3 onwards (page 52+)"};
 function lowBooks(){ return ["Maths","GL","Verbal","English","NVR"].map(bk=>{ const L=SHEETS.filter(x=>x.book===bk); return {bk,left:L.filter(x=>!sheetFinished(x)).length,total:L.length}; }).filter(b=>b.total&&b.left<=3); }
@@ -1019,7 +1023,7 @@ function check(){
   r.tries.push(v);
   const m=diagnoseAny(a,op,b,v);
   if(!m){ setTimeout(()=>maybeUnlockNext(s),0); const wasWrong=r.status==="wrong"; r.status = r.tries.length===1 && !r.lined && !r.blank ? "star" : "ok";
-    if(wasWrong && !s.qs.some(q=>store[s.id]?.[q[0]]?.status==="wrong")) logEvent(`Finished all corrections for ${s.day}`);
+    if(wasWrong && !s.qs.some(q=>store[s.id]?.[q[0]]?.status==="wrong")) logEvent(`Finished all corrections for ${sLabel(s)}`);
     save(); confetti(); }
   else { r.mistakes.push(m); save(); }
   render();
@@ -1142,7 +1146,7 @@ function renderResults(){
   const label={review:["✍️ Waiting for parent","p-help"],wrong:["To correct ✗","p-wrong"],star:["First try ⭐","p-star"],ok:["Got it after a retry","p-ok"],help:["Needed help","p-help"]};
   app.innerHTML=header(true)+(view.fromParent?`<div class="row" style="margin:-6px 0 12px"><button class="btn ghost small" onclick="go('parent')">← Parent area</button></div>`:"")+`
   <div class="card">
-    <div class="qhead"><span>${esc(isV(s)?s.title:s.day)} ${wasTest?"test ":""}results</span>${wasTest?`<span>Test score: ${star}/${rows.length}</span>`:""}</div>
+    <div class="qhead"><span>${subj(s)} · ${esc(isV(s)?s.title:s.day)} ${wasTest&&!s.test?"test ":""}results</span>${wasTest?`<span>Test score: ${star}/${rows.length}</span>`:""}</div>
     <div class="big">${star+ok}/${rows.length}</div>
     <div class="stars">${starsTxt}</div>
     <p class="sub" style="text-align:center">${pct>=90?"Outstanding work, Tito!":pct>=70?"Great job — nearly there!":pct>=40?"Good effort. Practise the tricky ones again.":"Keep going — every question makes you stronger."}</p>
@@ -1166,7 +1170,7 @@ function renderResults(){
   </div>`;
 }
 function reportText(){
-  const s=sheetById(view.sid); let out=`Tito – ${s.day} (${s.topic})\n`;
+  const s=sheetById(view.sid); let out=`Tito – ${subj(s)} – ${s.day} (${s.topic})\n`;
   const rows=s.qs.map(q=>({q,r:store[s.id]?.[q[0]]}));
   const good=rows.filter(x=>["star","ok"].includes(x.r?.status)).length;
   out+=`Score: ${good}/${rows.length} (first try: ${rows.filter(x=>x.r?.status==="star").length})\n\n`;
@@ -1177,7 +1181,7 @@ function shortReport(sid){
   const s=sheetById(sid), t=store.tests?.[sid];
   const rows=s.qs.map(q=>({q,r:store[sid]?.[q[0]]}));
   const right=rows.filter(x=>["star","ok"].includes(x.r?.status)).length;
-  let out=`📚 Tito's 11+ Prep – ${s.day}\n`;
+  let out=`📚 Tito's 11+ Prep\n${subj(s)} – ${isV(s)?s.title+" ("+s.short+")":s.day}\n`;
   if(t&&t.submitted) out+=`📝 Test score: ${t.score}/${t.total}\n`;
   out+=`✅ Now correct: ${right}/${rows.length}\n`;
   const toFix=rows.filter(x=>x.r?.status==="wrong"), helped=rows.filter(x=>x.r?.status==="help");
@@ -1257,7 +1261,7 @@ function renderParent(){
     ${active.length?`<table class="ptable"><tr><th>Sheet</th><th>Done</th><th>Test</th><th>To fix</th><th></th></tr>
     ${active.map(s=>{ const p=progress(s), t=store.tests?.[s.id], toFix=s.qs.filter(q=>store[s.id]?.[q[0]]?.status==="wrong").length;
       const test=t&&t.submitted?`<b>${t.score}/${t.total}</b><br><span class="lbl">${t.at?fmt(t.at):""}</span>`:(t?"in progress":"—");
-      return `<tr><td><b>${isV(s)?({English:"EN ",NVR:"NV ",GL:"GL "}[s.book]||"VR ")+esc(s.short):s.day.replace("Day ","")}</b></td><td>${p.done}/${p.total}</td><td>${test}</td><td>${toFix?`<span style="color:#9B1C20;font-weight:800">${toFix}</span>`:"0"}</td>
+      return `<tr><td><span class="lbl">${subj(s)}</span><br><b>${isV(s)?esc(s.short)+" "+esc(s.title):esc(s.day)}</b></td><td>${p.done}/${p.total}</td><td>${test}</td><td>${toFix?`<span style="color:#9B1C20;font-weight:800">${toFix}</span>`:"0"}</td>
       <td><button class="link" onclick="view={screen:'results',sid:'${s.id}',fromParent:true};render()">Answers</button><br><button class="link" style="color:var(--red)" onclick="resetSheet('${s.id}')">Reset</button></td></tr>`;}).join("")}</table>`:`<p class="sub">Tito hasn't started any sheets yet.</p>`}
     <p class="sub" style="margin-top:8px">${untouched} of ${SHEETS.length} sheets not started yet.</p></div>`;
   const log=(store.log||[]).slice(0,20);
@@ -1346,7 +1350,7 @@ function renderTest(){
   const filled=n=>{const v=(t.answers[n]||"").trim();return v&&v!=="."};
   const count=()=>s.qs.filter(q=>filled(q[0])).length;
   app.innerHTML=header(true)+`
-  <div class="card"><h2>📝 ${esc(s.day)} test</h2>
+  <div class="card">${subjTag(s)}<h2>📝 ${esc(s.day)} test</h2>
     ${howTo(s)}
     <p class="sub" style="margin-top:10px">Answer every question, then tap <b>Finish &amp; mark</b>. Your score and corrections show at the end. Use paper for your working out.</p>
     <div class="bar" style="margin-top:10px"><i id="tbar" style="width:${count()/s.qs.length*100}%"></i></div>
@@ -1381,7 +1385,7 @@ function submitTest(){
   });
   t.submitted=true; t.score=right; t.total=s.qs.length; t.at=Date.now();
   const nrev=s.qs.filter(q=>store[s.id][q[0]].status==="review").length; if(nrev) logEvent(`${sLabel(s)}: ${nrev} answer${nrev>1?"s":""} waiting for you to mark`);
-  logEvent(`Finished ${isV(s)?s.title:s.day} test: ${right}/${s.qs.length}`); save(); document.getElementById("toast").classList.remove("on");
+  logEvent(`Finished ${sLabel(s)} test: ${right}/${s.qs.length}`); save(); document.getElementById("toast").classList.remove("on");
   maybeUnlockNext(s);
   view={screen:"results",sid:s.id}; render(); window.scrollTo(0,0);
   if(right/s.qs.length>=0.7) confetti();
